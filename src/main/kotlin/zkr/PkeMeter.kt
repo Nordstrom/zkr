@@ -49,6 +49,6 @@ class PkeMeter(val prefix: String) {
     }
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
+        private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
     }
 } //-PkeMeter

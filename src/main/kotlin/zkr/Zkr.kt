@@ -10,9 +10,7 @@ import org.apache.zookeeper.txn.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.EOFException
-import java.io.FileInputStream
-import java.io.IOException
+import java.io.*
 import java.lang.invoke.MethodHandles
 import java.time.Duration
 import java.util.zip.Adler32
@@ -25,51 +23,55 @@ import kotlin.system.measureTimeMillis
         description = ["ZooKeeper Reaper"],
         mixinStandardHelpOptions = true,
         version = ["0.1α"],
-        subcommands = [
-            CommandLine.HelpCommand::class
-        ],
+        subcommands = [CommandLine.HelpCommand::class],
         usageHelpWidth = 120
 )
 class Zkr : Runnable {
     @CommandLine.Mixin
     lateinit var options: ZkrOptions
+    lateinit var zk: ZkClient
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
         @JvmStatic
         fun main(args: Array<String>) {
-            logger.debug("CROSSING.THE.STREAMS")
             val exitCode = CommandLine(Zkr()).execute(*args)
-            logger.debug("TOTAL.PROTONIC.REVERSAL")
             exitProcess(exitCode)
         } //-main
+
 
     } //-companion
 
     override fun run() {
-        logger.debug("STREAMS.CROSSED")
-
         try {
+            zk = ZkClient(options)
             val fis = FileInputStream(options.txnLog)
-            val stream = BinaryInputArchive.getArchive(fis)
+            val stream = getArchive(fis)
+//            val stream = BinaryInputArchive.getArchive(fis)
             val fhdr = FileHeader()
             fhdr.deserialize(stream, "fileheader")
+            val magic: Int = fhdr.magic
+            logger.debug("magic=$magic == 0x${magic.toString(16)} == ${CliHelper.intToAscii(magic)}")
             if (fhdr.magic != FileTxnLog.TXNLOG_MAGIC) {
                 throw InvalidMagicNumberException("Invalid magic number for ${options.txnLog}")
             }
-            println("ZooKeeper txn log: dbid=${fhdr.dbid}, format.version=${fhdr.version}")
+            logger.info("ZooKeeper txn log: dbid=${fhdr.dbid}, format.version=${fhdr.version}")
 
             process(stream)
 
         } catch (e: Exception) {
-            logger.error("ERR: $e")
+            logger.error("$e")
         }
-
-        logger.debug("PROTON.PACK.OVERLOAD")
     }
 
-    private fun process(stream: BinaryInputArchive) {
+    private fun getArchive(strm: InputStream?): BinaryInputArchive {
+        //TODO detect if gzip backup file and expand
+        //FileTxnArchive.TXNARCHIVE_MAGIC == 0x1f8b0800
+        return BinaryInputArchive(DataInputStream(strm))
+    }
+
+    fun process(stream: BinaryInputArchive) {
         var numTxn = 0
         var isActive = true
         val time = measureTimeMillis {
@@ -85,7 +87,7 @@ class Zkr : Runnable {
                     break
                 }
                 if (bytes.isEmpty()) { // Since we preallocate, we define EOF to be an empty transaction
-                    println("ZooKeeper txn log: EOF")
+                    logger.info("ZooKeeper txn log: EOF")
                     isActive = false
                     break
                 }
@@ -96,45 +98,43 @@ class Zkr : Runnable {
                 }
                 val hdr = TxnHeader()
                 val txn = SerializeUtils.deserializeTxn(bytes, hdr)
-                handleTxn(hdr, txn)
+                processTxn(hdr, txn)
 
                 if (stream.readByte("EOR") != 'B'.toByte()) {
-                    System.err.println("Last transaction was partial.")
+                    logger.info("Last transaction was partial.")
                     throw EOFException("Last transaction was partial.")
                 }
                 numTxn++
             } //-while
         } //-time
 
-        println("$numTxn transactions in ${Duration.ofMillis(time)}")
+        logger.info("$numTxn transactions in ${Duration.ofMillis(time)}")
     }
 
-    private fun handleTxn(hdr: TxnHeader, txn: Record?) {
-        logger.debug(".handle-txn: ${txn?.javaClass?.simpleName}")
+    fun processTxn(hdr: TxnHeader, txn: Record?) {
         when (txn) {
             //exhibitor: Create-Persistent
             is CreateTxn -> {
-                ZNodeCreate(options).process(hdr, txn)
+                ZNodeCreate(zk = zk, options = options).process(hdr, txn)
             }
             //exhibitor: Delete
             is DeleteTxn -> {
-                ZNodeDelete(options).process(hdr, txn)
+                ZNodeDelete(zk = zk, options = options).process(hdr, txn)
             }
             //exhibitor: SetData
             is SetDataTxn -> {
-                ZNodeSetData(options).process(hdr, txn)
+                ZNodeSetData(zk = zk, options = options).process(hdr, txn)
             }
             is SetACLTxn -> {
-                ZNodeSetACL(options).process(hdr, txn)
+                ZNodeSetACL(zk = zk, options = options).process(hdr, txn)
             }
             is MultiTxn -> {
                 txn.txns.forEach {
-                    handleTxn(hdr, it)
+                    processTxn(hdr, it)
                 }
             }
             else -> {
-                val s = ZNode.txnHeaderString(hdr, txn)
-                if (options.verbose || options.overwrite) println("IGNORE $s")
+                ZNodeIgnore(zk = zk, options = options).process(hdr, txn)
             }
         }
     }

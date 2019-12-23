@@ -32,4 +32,8 @@ class ZkrOptions {
 
     @CommandLine.Parameters(index = "0", description = ["Log or backup file to restore"], arity = "1")
     lateinit var txnLog: String
+
+    override fun toString(): String {
+        return "dry-run=$dryRun, verbose=$verbose, overwrite=$overwrite, host=$host, txnLog=$txnLog"
+    }
 }

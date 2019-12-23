@@ -25,4 +25,18 @@ object CliHelper {
         return channel
     }
 
+    fun intToAscii(value: Int): String? {
+        return hexToAscii(value.toString(16))
+    }
+
+    fun hexToAscii(hexStr: String): String? {
+        val output = java.lang.StringBuilder("")
+        var i = 0
+        while (i < hexStr.length) {
+            val str = hexStr.substring(i, i + 2)
+            output.append(str.toInt(16).toChar())
+            i += 2
+        }
+        return output.toString()
+    }
 } //-CliHelper
