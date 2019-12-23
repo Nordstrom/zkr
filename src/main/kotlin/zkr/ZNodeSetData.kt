@@ -16,15 +16,19 @@ class ZNodeSetData(override val options: ZkrOptions, override val zk: ZkClient) 
             s += "\n  path = ${txn.path}"
             s += "\n  data = ${String(txn.data)}"
         }
-        if (options.verbose) logger.info(s)
-
-        if (options.dryRun) {
-            logger.info("PRETEND: txn=${txn?.javaClass?.simpleName}, path=${txn?.path}")
-            return
-        }
-
         // SetDataTxn
         if (txn != null) {
+            if (shouldExclude(txn.path)) {
+                ZNodeCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
+                return
+            }
+            if (options.verbose) logger.info(s)
+
+            if (options.dryRun) {
+                logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
+                return
+            }
+
             if (txn.data != null) {
                 zk.setData(txn.path, txn.data)
                 logger.info("setData for ${txn.path}")

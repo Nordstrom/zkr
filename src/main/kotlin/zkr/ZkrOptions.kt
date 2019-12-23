@@ -30,10 +30,18 @@ class ZkrOptions {
             defaultValue = "localhost:2181")
     lateinit var host: String
 
+    @CommandLine.Option(
+            names = ["--exclude", "-e"],
+            description = ["Comma-delimited list of paths to exclude (default: \${DEFAULT-VALUE})"],
+            split = ",",
+            defaultValue = ""
+    )
+    lateinit var exclude: List<String>
+
     @CommandLine.Parameters(index = "0", description = ["Log or backup file to restore"], arity = "1")
     lateinit var txnLog: String
 
     override fun toString(): String {
-        return "dry-run=$dryRun, verbose=$verbose, overwrite=$overwrite, host=$host, txnLog=$txnLog"
+        return "dry-run=$dryRun, verbose=$verbose, overwrite=$overwrite, host=$host, txnLog=$txnLog, exclude=$exclude"
     }
 }

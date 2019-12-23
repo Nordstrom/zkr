@@ -15,6 +15,10 @@ class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient) :
         val txnString = txn2String(hdr, txn)
         // Only create persistent (i.e., non-ephemeral) znodes.
         if (!txn?.ephemeral!!) {
+            if (shouldExclude(txn.path)) {
+                logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
+                return
+            }
             if (options.verbose) logger.info(txnString)
 
             if (options.dryRun) {

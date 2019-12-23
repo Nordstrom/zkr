@@ -12,14 +12,18 @@ class ZNodeDelete(override val options: ZkrOptions, override val zk: ZkClient) :
     override fun process(hdr: TxnHeader, txn: DeleteTxn?) {
         val txnString = txn2String(hdr, txn)
         val s = "$txnString\n  path = ${txn?.path}"
-        if (options.verbose) logger.info(s)
-
-        if (options.dryRun) {
-            logger.info("PRETEND: txn=${txn?.javaClass?.simpleName}, path=${txn?.path}")
-            return
-        }
-
         if (txn != null) {
+            if (shouldExclude(txn.path)) {
+                ZNodeCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
+                return
+            }
+            if (options.verbose) logger.info(s)
+
+            if (options.dryRun) {
+                logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
+                return
+            }
+
             zk.deleteZNode(txn.path)
         } else {
             logger.warn("Cannot delete null txn: $txnString")

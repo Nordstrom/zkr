@@ -6,10 +6,15 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 interface ZNode<T : Any> {
-    val options: ZkrOptions?
+    val options: ZkrOptions
     val zk: ZkClient
 
     fun process(hdr: TxnHeader, txn: T?)
+
+    fun shouldExclude(path: String): Boolean {
+        return options.exclude.any { path.startsWith(it) }
+    }
+
 
     companion object {
         private const val HDR_FORMAT = "%-29s sid=0x%-16s cxid=0x%-3s zxid=0x%-3s %-16s"

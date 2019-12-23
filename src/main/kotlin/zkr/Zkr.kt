@@ -20,7 +20,7 @@ import kotlin.system.measureTimeMillis
 
 @CommandLine.Command(
         name = "zkr",
-        description = ["ZooKeeper Reaper"],
+        description = ["ZooKeeper Reaper - utility to view and replay ZooKeeper transaction logs and backups"],
         mixinStandardHelpOptions = true,
         version = ["0.1α"],
         subcommands = [CommandLine.HelpCommand::class],
@@ -43,9 +43,12 @@ class Zkr : Runnable {
 
     } //-companion
 
+
     override fun run() {
         try {
             zk = ZkClient(options)
+            logger.debug("options: $options")
+
             val fis = FileInputStream(options.txnLog)
             val stream = getArchive(fis)
 //            val stream = BinaryInputArchive.getArchive(fis)
