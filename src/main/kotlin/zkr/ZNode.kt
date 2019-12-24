@@ -12,7 +12,8 @@ interface ZNode<T : Any> {
     fun process(hdr: TxnHeader, txn: T?)
 
     fun shouldExclude(path: String): Boolean {
-        return options.exclude.any { path.startsWith(it) }
+        val excluded = options.exclude.filter { path.startsWith(it) }
+        return excluded.isEmpty()
     }
 
 
@@ -20,7 +21,7 @@ interface ZNode<T : Any> {
         private const val HDR_FORMAT = "%-29s sid=0x%-16s cxid=0x%-3s zxid=0x%-3s %-16s"
         private val DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 
-        fun txn2String(hdr: TxnHeader, txn: Record?, short: Boolean = false): String {
+        fun txn2String(hdr: TxnHeader, txn: Record?): String {
             val data = if (txn == null) "TXN_NULL" else "$txn".trim()
             return txnHeaderString(hdr, txn) + ", data=" + data
         }

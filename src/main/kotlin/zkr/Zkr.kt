@@ -15,6 +15,7 @@ import java.lang.invoke.MethodHandles
 import java.time.Duration
 import java.util.zip.Adler32
 import java.util.zip.Checksum
+import java.util.zip.GZIPInputStream
 import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 
@@ -40,27 +41,18 @@ class Zkr : Runnable {
             exitProcess(exitCode)
         } //-main
 
+        const val TXNARCHIVE_MAGIC = 0x1f8b0800
 
     } //-companion
 
 
     override fun run() {
         try {
+            logger.info("Excluding: ${options.exclude}")
             zk = ZkClient(options)
             logger.debug("options: $options")
 
-            val fis = FileInputStream(options.txnLog)
-            val stream = getArchive(fis)
-//            val stream = BinaryInputArchive.getArchive(fis)
-            val fhdr = FileHeader()
-            fhdr.deserialize(stream, "fileheader")
-            val magic: Int = fhdr.magic
-            logger.debug("magic=$magic == 0x${magic.toString(16)} == ${CliHelper.intToAscii(magic)}")
-            if (fhdr.magic != FileTxnLog.TXNLOG_MAGIC) {
-                throw InvalidMagicNumberException("Invalid magic number for ${options.txnLog}")
-            }
-            logger.info("ZooKeeper txn log: dbid=${fhdr.dbid}, format.version=${fhdr.version}")
-
+            val stream = getArchive(options.txnLog)
             process(stream)
 
         } catch (e: Exception) {
@@ -68,10 +60,31 @@ class Zkr : Runnable {
         }
     }
 
-    private fun getArchive(strm: InputStream?): BinaryInputArchive {
-        //TODO detect if gzip backup file and expand
-        //FileTxnArchive.TXNARCHIVE_MAGIC == 0x1f8b0800
-        return BinaryInputArchive(DataInputStream(strm))
+    private fun getArchive(txnLog: String): BinaryInputArchive {
+        val fis = FileInputStream(txnLog)
+        var stream = BinaryInputArchive(DataInputStream(fis))
+        var fhdr = FileHeader()
+        fhdr.deserialize(stream, "fileheader")
+        logger.debug("magic=${fhdr.magic} == 0x${fhdr.magic.toString(16)} == ${CliHelper.intToAscii(fhdr.magic)}")
+
+        when (fhdr.magic) {
+            FileTxnLog.TXNLOG_MAGIC -> {
+            }
+            TXNARCHIVE_MAGIC -> {
+                logger.warn("Reading gzip compressed file")
+                val gfis = FileInputStream(txnLog)
+                val gzipStream = GZIPInputStream(gfis)
+                stream = BinaryInputArchive(DataInputStream(gzipStream))
+                fhdr = FileHeader()
+                fhdr.deserialize(stream, "fileheader")
+                logger.debug("magic=${fhdr.magic} == 0x${fhdr.magic.toString(16)} == ${CliHelper.intToAscii(fhdr.magic)}")
+            }
+            else -> {
+                throw InvalidMagicNumberException("Invalid magic number for ${txnLog}")
+            }
+        }
+
+        return stream
     }
 
     fun process(stream: BinaryInputArchive) {

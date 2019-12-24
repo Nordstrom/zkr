@@ -19,18 +19,17 @@ class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient) :
                 logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
-            if (options.verbose) logger.info(txnString)
-
             if (options.dryRun) {
                 logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
+            if (options.verbose) logger.info(txnString)
 
-            create(hdr, txn)
+            create(txn)
         }
     }
 
-    private fun create(hdr: TxnHeader, txn: CreateTxn?) {
+    private fun create(txn: CreateTxn?) {
         if (txn != null) {
             try {
                 zk.createZNode(txn.path, txn.data, txn.acl, CreateMode.PERSISTENT)

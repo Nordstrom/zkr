@@ -27,7 +27,7 @@ class ZkClient(options:ZkrOptions) {
         })
         try {
             if (!connected.await(ZK_SESSION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                throw IOException("Timeout out connecting to: $${options.host}")
+                throw IOException("Timeout out connecting to: ${options.host}")
             }
             logger.info("connected")
         } catch (e: InterruptedException) {
