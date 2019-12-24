@@ -50,7 +50,6 @@ class Zkr : Runnable {
         try {
             logger.info("Excluding: ${options.exclude}")
             zk = ZkClient(options)
-            logger.debug("options: $options")
 
             val stream = getArchive(options.txnLog)
             process(stream)
@@ -61,23 +60,20 @@ class Zkr : Runnable {
     }
 
     private fun getArchive(txnLog: String): BinaryInputArchive {
-        val fis = FileInputStream(txnLog)
-        var stream = BinaryInputArchive(DataInputStream(fis))
+        var stream = BinaryInputArchive(DataInputStream(FileInputStream(txnLog)))
         var fhdr = FileHeader()
         fhdr.deserialize(stream, "fileheader")
-        logger.debug("magic=${fhdr.magic} == 0x${fhdr.magic.toString(16)} == ${CliHelper.intToAscii(fhdr.magic)}")
 
         when (fhdr.magic) {
             FileTxnLog.TXNLOG_MAGIC -> {
+                logger.info("Reading transaction log")
             }
             TXNARCHIVE_MAGIC -> {
-                logger.warn("Reading gzip compressed file")
-                val gfis = FileInputStream(txnLog)
-                val gzipStream = GZIPInputStream(gfis)
+                logger.info("Reading gzip compressed transaction log")
+                val gzipStream = GZIPInputStream(FileInputStream(txnLog))
                 stream = BinaryInputArchive(DataInputStream(gzipStream))
                 fhdr = FileHeader()
                 fhdr.deserialize(stream, "fileheader")
-                logger.debug("magic=${fhdr.magic} == 0x${fhdr.magic.toString(16)} == ${CliHelper.intToAscii(fhdr.magic)}")
             }
             else -> {
                 throw InvalidMagicNumberException("Invalid magic number for ${txnLog}")

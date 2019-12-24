@@ -35,12 +35,7 @@ interface ZNode<T : Any> {
             return String.format(HDR_FORMAT, date, scid, cxid, zxid, type)
         }
 
-        //TODO ZNodeBase factory
-//        fun create(options:ZkrOptions, hdr:TxnHeader, txn:Record?) : ZNodeBase {
-//            when (txn) {
-//                is CreateTxn -> ZNodeCreate(options)
-//            }
-//        }
+        //TODO ZNode factory?
     }//-companion
 
 } //-ZNode
