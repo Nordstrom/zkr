@@ -44,9 +44,13 @@ dependencies {
     implementation 'info.picocli:picocli:4.1.2'
     implementation 'org.apache.zookeeper:zookeeper:3.5.6'
 
-    // Logging
+    // aws V2!!
+    implementation platform('software.amazon.awssdk:bom:2.5.29')
+    implementation 'software.amazon.awssdk:s3'
+
+    // Logging (aws and/or org.apache.http use log4j)
     implementation 'org.slf4j:slf4j-api:1.7.29'
-    implementation 'org.slf4j:slf4j-simple:1.7.29'
+    implementation 'org.slf4j:slf4j-log4j12:1.7.29'
 
     // Use the Kotlin test library.
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
@@ -58,7 +62,6 @@ dependencies {
     testRuntimeOnly 'com.adarshr:gradle-test-logger-plugin:1.7.0'
     testRuntimeOnly 'org.jetbrains.kotlin:kotlin-reflect'
     testRuntimeOnly 'org.spekframework.spek2:spek-runner-junit5:2.0.7'
-
 
     // Use the Kotlin JUnit integration.
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'

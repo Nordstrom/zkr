@@ -3,19 +3,17 @@ package zkr
 import kotlinx.coroutines.Runnable
 import org.apache.jute.BinaryInputArchive
 import org.apache.jute.Record
-import org.apache.zookeeper.server.persistence.FileHeader
-import org.apache.zookeeper.server.persistence.FileTxnLog
 import org.apache.zookeeper.server.util.SerializeUtils
 import org.apache.zookeeper.txn.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.*
+import java.io.EOFException
+import java.io.IOException
 import java.lang.invoke.MethodHandles
 import java.time.Duration
 import java.util.zip.Adler32
 import java.util.zip.Checksum
-import java.util.zip.GZIPInputStream
 import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 
@@ -41,46 +39,25 @@ class Zkr : Runnable {
             exitProcess(exitCode)
         } //-main
 
-        const val TXNARCHIVE_MAGIC = 0x1f8b0800
 
     } //-companion
 
 
     override fun run() {
         try {
-            logger.info("Excluding: ${options.exclude}")
+            logger.info("excluding: ${options.exclude}")
             zk = ZkClient(options)
 
-            val stream = getArchive(options.txnLog)
+            val stream = BinaryInputArchiveFactory(
+                    txnLog = options.txnLog
+                    , s3bucket = options.s3bucket
+                    , s3region = options.s3region
+            ).create()
             process(stream)
 
         } catch (e: Exception) {
             logger.error("$e")
         }
-    }
-
-    private fun getArchive(txnLog: String): BinaryInputArchive {
-        var stream = BinaryInputArchive(DataInputStream(FileInputStream(txnLog)))
-        var fhdr = FileHeader()
-        fhdr.deserialize(stream, "fileheader")
-
-        when (fhdr.magic) {
-            FileTxnLog.TXNLOG_MAGIC -> {
-                logger.info("Reading transaction log")
-            }
-            TXNARCHIVE_MAGIC -> {
-                logger.info("Reading gzip compressed transaction log")
-                val gzipStream = GZIPInputStream(FileInputStream(txnLog))
-                stream = BinaryInputArchive(DataInputStream(gzipStream))
-                fhdr = FileHeader()
-                fhdr.deserialize(stream, "fileheader")
-            }
-            else -> {
-                throw InvalidMagicNumberException("Invalid magic number for ${txnLog}")
-            }
-        }
-
-        return stream
     }
 
     fun process(stream: BinaryInputArchive) {
@@ -151,4 +128,4 @@ class Zkr : Runnable {
         }
     }
 
-} //-App
+} //-Zkr

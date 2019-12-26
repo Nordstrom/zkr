@@ -38,10 +38,27 @@ class ZkrOptions {
     )
     lateinit var exclude: List<String>
 
+    @CommandLine.Option(
+            names = ["--s3-bucket"],
+            description = ["S3 bucket containing Exhibitor transaction logs or backup files"],
+            defaultValue = ""
+    )
+    lateinit var s3bucket: String
+
+    @CommandLine.Option(
+            names = ["--s3-region"],
+            description = ["AWS Region (default: \${DEFAULT-VALUE})"],
+            defaultValue = "us-west-2"
+    )
+    lateinit var s3region: String
+
     @CommandLine.Parameters(index = "0", description = ["Log or backup file to restore"], arity = "1")
     lateinit var txnLog: String
 
     override fun toString(): String {
-        return "dry-run=$dryRun, verbose=$verbose, overwrite=$overwrite, host=$host, txnLog=$txnLog, exclude=$exclude"
+        return """
+dry-run=$dryRun, verbose=$verbose, overwrite=$overwrite, host=$host, txnLog=$txnLog, exclude=$exclude, s3bucket=$s3bucket, s3region=$s3region
+        """.trimIndent()
     }
-}
+
+} //-ZkrOptions

@@ -14,29 +14,33 @@ import java.lang.invoke.MethodHandles
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class ZkClient(options:ZkrOptions) {
-    private val zk: ZooKeeper
+class ZkClient(val options: ZkrOptions) {
+    private lateinit var zk: ZooKeeper
 
     init {
-        val connected = CountDownLatch(1)
-        logger.info("connecting to {}", options.host)
-        zk = ZooKeeper(options.host, Ints.checkedCast(ZK_SESSION_TIMEOUT_MS), Watcher { event ->
-            if (event.state == Watcher.Event.KeeperState.SyncConnected) {
-                connected.countDown()
-            }
-        })
-        try {
-            if (!connected.await(ZK_SESSION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                throw IOException("Timeout out connecting to: ${options.host}")
-            }
-            logger.info("connected")
-        } catch (e: InterruptedException) {
+        if (options.dryRun) {
+            logger.info("no connection to ZooKeeper for --dry-run")
+        } else {
+            val connected = CountDownLatch(1)
+            logger.info("connecting to {}", options.host)
+            zk = ZooKeeper(options.host, Ints.checkedCast(ZK_SESSION_TIMEOUT_MS), Watcher { event ->
+                if (event.state == Watcher.Event.KeeperState.SyncConnected) {
+                    connected.countDown()
+                }
+            })
             try {
-                zk.close()
-            } catch (e1: InterruptedException) {
-                e1.printStackTrace()
+                if (!connected.await(ZK_SESSION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                    throw IOException("Timeout out connecting to: ${options.host}")
+                }
+                logger.info("connected")
+            } catch (e: InterruptedException) {
+                try {
+                    zk.close()
+                } catch (e1: InterruptedException) {
+                    e1.printStackTrace()
+                }
+                throw e
             }
-            throw e
         }
     }
 
