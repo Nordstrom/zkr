@@ -25,6 +25,7 @@ class ZNodeDelete(override val options: ZkrOptions, override val zk: ZkClient) :
             }
 
             zk.deleteZNode(txn.path)
+            logger.info("Deleted znode at path=${txn.path}")
         } else {
             logger.warn("Cannot delete null txn: $txnString")
         }

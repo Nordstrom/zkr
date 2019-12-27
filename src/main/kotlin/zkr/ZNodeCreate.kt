@@ -31,22 +31,10 @@ class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient) :
 
     private fun create(txn: CreateTxn?) {
         if (txn != null) {
-            try {
-                zk.createZNode(txn.path, txn.data, txn.acl, CreateMode.PERSISTENT)
-                logger.info("Created node: path=${txn.path}")
-            } catch (e: NodeExistsException) {
-                if (options.overwrite) { // TODO: Compare with current data / acls
-                    logger.info("Overwrite node: path=${txn.path}")
-                    zk.setAcls(txn.path, txn.acl)
-                    if (txn.data != null) {
-                        zk.setData(txn.path, txn.data)
-                    }
-                } else {
-                    logger.warn("Node already exists: path=${txn.path}")
-                }
-            }
+            zk.createZNode(txn.path, txn.data, txn.acl, CreateMode.PERSISTENT, options.overwrite)
+            logger.info("Created znode at path=${txn.path}")
         } else {
-            logger.warn("Cannot create null txn")
+            logger.warn("Cannot process null txn")
         }
     }
 

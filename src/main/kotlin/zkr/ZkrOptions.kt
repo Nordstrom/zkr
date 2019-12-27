@@ -28,29 +28,28 @@ class ZkrOptions {
             names = ["--zookeeper", "-z"],
             description = ["Target ZooKeeper host:port (default: \${DEFAULT-VALUE})"],
             defaultValue = "localhost:2181")
-    lateinit var host: String
+    var host: String = "localhost:2181"
 
     @CommandLine.Option(
             names = ["--exclude", "-e"],
-            description = ["Comma-delimited list of paths to exclude (default: \${DEFAULT-VALUE})"],
-            split = ",",
-            defaultValue = ""
+            description = ["Comma-delimited list of paths to exclude"],
+            split = ","
     )
-    lateinit var exclude: List<String>
+    var exclude: List<String> = mutableListOf()
 
     @CommandLine.Option(
             names = ["--s3-bucket"],
             description = ["S3 bucket containing Exhibitor transaction logs or backup files"],
             defaultValue = ""
     )
-    lateinit var s3bucket: String
+    var s3bucket: String = ""
 
     @CommandLine.Option(
             names = ["--s3-region"],
             description = ["AWS Region (default: \${DEFAULT-VALUE})"],
             defaultValue = "us-west-2"
     )
-    lateinit var s3region: String
+    var s3region: String = "us-west-2"
 
     @CommandLine.Parameters(index = "0", description = ["Log or backup file to restore"], arity = "1")
     lateinit var txnLog: String

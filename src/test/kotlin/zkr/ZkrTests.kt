@@ -32,20 +32,26 @@ class ZkrTests : Spek({
         it("should get missing arg log message") {
             val args = emptyArray<String>()
             CommandLine(Zkr()).execute(*args)
-            //TODO how to capture and search stderr
+            //TODO how to capture and search stderr for expected content?
         }
 
         it("should get FileNotFoundException log message") {
-            val args = arrayOf<String>("not-a-file")
+            //NB: We can either specify --dry-run, or create TestingServer (see ZkClientTests) so
+            // the implicit connection to ZooKeeper does not affect the test.
+            val args = arrayOf<String>("--dry-run", "not-a-file")
             CommandLine(Zkr()).execute(*args)
-            //TODO how to capture and search stderr
+            //TODO how to capture and search stderr for expectedf content?
         }
 
         it("can handle CREATE znode transaction") {
             val app = Zkr()
             val opts = ZkrOptions()
-            opts.host="nohost:1234"
+            opts.host = "nohost:1234"
             opts.txnLog = "nolog"
+            opts.dryRun = true
+            opts.exclude = emptyList()
+            //TODO mock ZkClient if not 'dryRun'
+            app.zk = ZkClient(opts)
 
             app.options = opts
             val hdr = TxnHeader()
@@ -55,7 +61,9 @@ class ZkrTests : Spek({
             hdr.type = ZooDefs.OpCode.ping
             hdr.zxid = 333
             val txn = CreateTxn()
+            txn.path = "/"
             app.processTxn(hdr, txn)
+
             //TODO asserts
         }
 

@@ -53,8 +53,7 @@ class BinaryInputArchiveFactory(
 
     private fun gzipInputStream(): InputStream {
         logger.info("Reading gzip compressed transaction log")
-        val gzipStream = GZIPInputStream(inputStream())
-        return gzipStream
+        return GZIPInputStream(inputStream())
     }
 
     private fun s3InputStream(): InputStream {

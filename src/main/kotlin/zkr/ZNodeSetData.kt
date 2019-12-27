@@ -30,7 +30,7 @@ class ZNodeSetData(override val options: ZkrOptions, override val zk: ZkClient) 
 
             if (txn.data != null) {
                 zk.setData(txn.path, txn.data)
-                logger.info("setData for ${txn.path}")
+                logger.info("setData at path=${txn.path}")
             }
         } else {
             logger.warn("Cannot setData on null txn: $txnString")

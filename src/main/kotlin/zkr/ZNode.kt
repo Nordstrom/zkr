@@ -13,7 +13,7 @@ interface ZNode<T : Any> {
 
     fun shouldExclude(path: String): Boolean {
         val excluded = options.exclude.filter { path.startsWith(it) }
-        return excluded.isEmpty()
+        return excluded.isNotEmpty()
     }
 
 

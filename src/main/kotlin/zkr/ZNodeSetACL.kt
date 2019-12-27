@@ -27,7 +27,7 @@ class ZNodeSetACL(override val options: ZkrOptions, override val zk: ZkClient) :
             if (options.verbose) logger.info(s)
 
             zk.setAcls(txn.path, txn.acl)
-            logger.info("setAcls for ${txn.path}")
+            logger.info("setAcls at path=${txn.path}")
         } else {
             ZNodeSetData.logger.warn("Cannot setAcls on null txn: $txnString")
         }

@@ -62,6 +62,7 @@ dependencies {
     testRuntimeOnly 'com.adarshr:gradle-test-logger-plugin:1.7.0'
     testRuntimeOnly 'org.jetbrains.kotlin:kotlin-reflect'
     testRuntimeOnly 'org.spekframework.spek2:spek-runner-junit5:2.0.7'
+    testImplementation 'org.apache.curator:curator-test:4.2.0'
 
     // Use the Kotlin JUnit integration.
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
