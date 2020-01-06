@@ -59,12 +59,22 @@ class BinaryInputArchiveFactory(
     private fun s3InputStream(): InputStream {
         logger.info("Reading transaction log from S3: bucket=${s3bucket}, region=${s3region}, key=$txnLog")
         val s3region = when (s3region) {
+            //TODO other regions
             "us-west-2" -> Region.US_WEST_2
             else -> Region.US_WEST_2
         }
-        val s3 = S3Client.builder().region(s3region).build()
-        return s3.getObject(GetObjectRequest.builder().bucket(s3bucket).key(txnLog).build(),
-                ResponseTransformer.toInputStream())
+        val s3 = S3Client.builder()
+                .region(s3region)
+                .build()
+        //TODO parse versionId if '?' in txnLog
+        return s3.getObject(
+                GetObjectRequest.builder()
+                        .bucket(s3bucket)
+                        .key(txnLog)
+                        // TODO parse/set versionId if '?' in txnLog
+                        .build(),
+                ResponseTransformer.toInputStream()
+        )
     }
 
 

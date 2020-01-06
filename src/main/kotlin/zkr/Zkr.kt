@@ -13,8 +13,12 @@ import java.io.EOFException
 import java.io.IOException
 import java.lang.invoke.MethodHandles
 import java.time.Duration
+import java.time.Instant
+import java.util.*
 import java.util.zip.Adler32
 import java.util.zip.Checksum
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 
@@ -46,7 +50,7 @@ class Zkr : Runnable {
 
     override fun run() {
         try {
-            logger.info("excluding: ${options.exclude}")
+            logger.info("excluding: ${options.excludes}")
             if (options.overwrite) logger.warn("overwriting nodes!")
             logger.debug("options: $options")
             zk = ZkClient(options)
@@ -67,6 +71,8 @@ class Zkr : Runnable {
     fun process(stream: BinaryInputArchive) {
         var numTxn = 0
         var isActive = true
+        var earliest = Long.MAX_VALUE
+        var latest = Long.MIN_VALUE
         val time = measureTimeMillis {
             while (isActive) {
                 var crcValue: Long
@@ -92,7 +98,11 @@ class Zkr : Runnable {
 
                 val hdr = TxnHeader()
                 val txn = SerializeUtils.deserializeTxn(bytes, hdr)
-                processTxn(hdr, txn)
+                earliest = min(earliest, hdr.time)
+                latest = max(latest, hdr.time)
+                if (!options.info) {
+                    processTxn(hdr, txn)
+                }
 
                 if (stream.readByte("EOR") != 'B'.toByte()) {
                     logger.info("Last transaction was partial.")
@@ -102,7 +112,13 @@ class Zkr : Runnable {
             } //-while
         } //-time
 
-        logger.info("$numTxn transactions in ${Duration.ofMillis(time)}")
+//        val e = Date(earliest).toInstant()
+//        val l = Date(latest).toInstant()
+//        logger.info("$numTxn transactions in ${Duration.ofMillis(time)}")
+//        logger.info("  from: $e")
+//        logger.info("  to  : $l")
+//        logger.info("  dur : ${Duration.between(e, l)}")
+        logger.info("Summary ${summary(numTxn, Date(earliest).toInstant(), Date(latest).toInstant(), time)}")
     }
 
     fun processTxn(hdr: TxnHeader, txn: Record?) {
@@ -132,5 +148,18 @@ class Zkr : Runnable {
             }
         }
     }
+
+    private fun summary(numberTxn: Int, earliest: Instant, latest: Instant, millis: Long): String = """
+
+  ,-----------.  
+(_\  ZooKeeper \ title    : ${options.txnLog}
+   | Reaper    | txn      : $numberTxn
+   | Summary   | from     : $earliest
+  _|           | to       : $latest
+ (_/_____(*)___/ duration : ${Duration.between(earliest, latest)}
+          \\     playback : ${Duration.ofMillis(millis)}
+           ))
+           ^
+""".trimIndent()
 
 } //-Zkr

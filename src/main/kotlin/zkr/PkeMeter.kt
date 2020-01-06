@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
 import java.time.Duration
 
+// Pyrokinetic Energy Meter (see Ghostbusters)
 class PkeMeter(val prefix: String) {
 
     init {

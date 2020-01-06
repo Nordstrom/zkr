@@ -18,7 +18,7 @@ class ZkClient(options: ZkrOptions) {
     lateinit var zk: ZooKeeper
 
     init {
-        if (options.dryRun) {
+        if (options.dryRun || options.info) {
             logger.info("no connection to ZooKeeper for --dry-run")
         } else {
             val connected = CountDownLatch(1)
@@ -51,6 +51,7 @@ class ZkClient(options: ZkrOptions) {
         if (data != null) {
             logger.trace("create-znode:data=|${String(data)}|")
         }
+
         createPath(path)
         logger.trace("create-znode.zk-create")
         try {

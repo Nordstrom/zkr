@@ -35,7 +35,7 @@ class ZkrOptions {
             description = ["Comma-delimited list of paths to exclude"],
             split = ","
     )
-    var exclude: List<String> = mutableListOf()
+    var excludes: List<String> = mutableListOf()
 
     @CommandLine.Option(
             names = ["--s3-bucket"],
@@ -51,12 +51,20 @@ class ZkrOptions {
     )
     var s3region: String = "us-west-2"
 
+    @CommandLine.Option(
+            names = ["--info", "-i"],
+            description = ["Print information about transaction log then exit  (default: \${DEFAULT-VALUE})"],
+            defaultValue = "false"
+    )
+    var info: Boolean = false
+
     @CommandLine.Parameters(index = "0", description = ["Log or backup file to restore"], arity = "1")
+    //TODO If S3 versioning, use '?' and parse
     lateinit var txnLog: String
 
     override fun toString(): String {
         return """
-dry-run=$dryRun, verbose=$verbose, overwrite=$overwrite, host=$host, txnLog=$txnLog, exclude=$exclude, s3bucket=$s3bucket, s3region=$s3region
+dry-run=$dryRun, verbose=$verbose, overwrite=$overwrite, host=$host, txnLog=$txnLog, exclude=$excludes, s3bucket=$s3bucket, s3region=$s3region
         """.trimIndent()
     }
 

@@ -6,12 +6,9 @@ import org.apache.zookeeper.txn.TxnHeader
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 import picocli.CommandLine
-import java.lang.NullPointerException
-import java.lang.System.err
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 // kotlin-test
@@ -40,7 +37,7 @@ class ZkrTests : Spek({
             // the implicit connection to ZooKeeper does not affect the test.
             val args = arrayOf<String>("--dry-run", "not-a-file")
             CommandLine(Zkr()).execute(*args)
-            //TODO how to capture and search stderr for expectedf content?
+            //TODO how to capture and search stderr for expected content?
         }
 
         it("can handle CREATE znode transaction") {
@@ -49,7 +46,7 @@ class ZkrTests : Spek({
             opts.host = "nohost:1234"
             opts.txnLog = "nolog"
             opts.dryRun = true
-            opts.exclude = emptyList()
+            opts.excludes = emptyList()
             //TODO mock ZkClient if not 'dryRun'
             app.zk = ZkClient(opts)
 

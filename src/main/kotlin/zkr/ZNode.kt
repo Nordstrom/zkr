@@ -12,7 +12,7 @@ interface ZNode<T : Any> {
     fun process(hdr: TxnHeader, txn: T?)
 
     fun shouldExclude(path: String): Boolean {
-        val excluded = options.exclude.filter { path.startsWith(it) }
+        val excluded = options.excludes.filter { path.startsWith(it) }
         return excluded.isNotEmpty()
     }
 
