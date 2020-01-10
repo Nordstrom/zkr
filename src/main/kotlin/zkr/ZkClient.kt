@@ -14,28 +14,28 @@ import java.lang.invoke.MethodHandles
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class ZkClient(options: ZkrOptions) {
-    lateinit var zk: ZooKeeper
+class ZkClient(val host: String, connect: Boolean = true) {
+    var zk: ZooKeeper? = null
 
     init {
-        if (options.dryRun || options.info) {
+        if (!connect) {
             logger.info("no connection to ZooKeeper for --dry-run")
         } else {
             val connected = CountDownLatch(1)
-            logger.info("connecting to {}", options.host)
-            zk = ZooKeeper(options.host, Ints.checkedCast(ZK_SESSION_TIMEOUT_MS), Watcher { event ->
+            logger.info("connecting to $host")
+            zk = ZooKeeper(host, Ints.checkedCast(ZK_SESSION_TIMEOUT_MS), Watcher { event ->
                 if (event.state == Watcher.Event.KeeperState.SyncConnected) {
                     connected.countDown()
                 }
             })
             try {
                 if (!connected.await(ZK_SESSION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    throw IOException("Timeout out connecting to: ${options.host}")
+                    throw IOException("Timeout out connecting to: $host")
                 }
                 logger.info("connected")
             } catch (e: InterruptedException) {
                 try {
-                    zk.close()
+                    zk!!.close()
                 } catch (e1: InterruptedException) {
                     logger.error("$e1")
                 }
@@ -55,7 +55,7 @@ class ZkClient(options: ZkrOptions) {
         createPath(path)
         logger.trace("create-znode.zk-create")
         try {
-            val actual = zk.create(path, data, acls, mode)
+            val actual = zk?.create(path, data, acls, mode)
             logger.trace("create-znode.OK:actual=|$actual|")
         } catch (e: NodeExistsException) {
             if (overwrite) {
@@ -74,14 +74,14 @@ class ZkClient(options: ZkrOptions) {
 
     fun deleteZNode(path: String) {
         logger.trace("delete-znode:path=|$path|")
-        zk.delete(path, -1)
+        zk?.delete(path, -1)
     }
 
     fun setAcls(path: String, acls: List<ACL>) {
         logger.trace("set-acls:path=|$path|")
         logger.trace("set-acls:acls=|$acls|")
         createPath(path)
-        val stat = zk.setACL(path, acls, -1)
+        val stat = zk?.setACL(path, acls, -1)
         logger.trace("set-acls:stat=$stat")
     }
 
@@ -89,7 +89,7 @@ class ZkClient(options: ZkrOptions) {
         logger.trace("set-data:path=|$path|")
         logger.trace("create-znode:data=|${String(data)}|")
         createPath(path)
-        val stat = zk.setData(path, data, -1)
+        val stat = zk?.setData(path, data, -1)
         logger.trace("set-data:stat=$stat")
     }
 
@@ -99,16 +99,21 @@ class ZkClient(options: ZkrOptions) {
         if ("/" == path) {
             return
         }
-        if (zk.exists(path, false) == null) {
+        if (zk?.exists(path, false) == null) {
             createPath(getParentPath(path))
             try {
                 logger.trace("zk.create-path:path=|$path|, acls=${Ids.OPEN_ACL_UNSAFE}")
-                val actual = zk.create(path, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
+                val actual = zk?.create(path, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
                 logger.trace("zk.create-path:actual=|$actual|")
             } catch (e: NodeExistsException) { // Race condition
                 logger.error("create-path-error: $e")
             }
         }
+    }
+
+    fun close() {
+        zk?.close()
+        logger.info("close connection to $host")
     }
 
     private fun getParentPath(path: String): String {

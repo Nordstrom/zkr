@@ -17,12 +17,12 @@ class ZkrOptions {
     )
     var verbose: Boolean = false
 
-    @CommandLine.Option(
-            names = ["--overwrite-existing", "-o"],
-            description = ["Overwrite existing znodes (default: \${DEFAULT-VALUE})"],
-            defaultValue = "false"
-    )
-    var overwrite: Boolean = false
+//    @CommandLine.Option(
+//            names = ["--overwrite-existing", "-o"],
+//            description = ["Overwrite existing znodes (default: \${DEFAULT-VALUE})"],
+//            defaultValue = "false"
+//    )
+//    var overwrite: Boolean = false
 
     @CommandLine.Option(
             names = ["--zookeeper", "-z"],
@@ -30,12 +30,14 @@ class ZkrOptions {
             defaultValue = "localhost:2181")
     var host: String = "localhost:2181"
 
+    //TODO regex
     @CommandLine.Option(
             names = ["--exclude", "-e"],
             description = ["Comma-delimited list of paths to exclude"],
             split = ","
     )
     var excludes: List<String> = mutableListOf()
+    //TODO includes? regex
 
     @CommandLine.Option(
             names = ["--s3-bucket"],
@@ -52,20 +54,26 @@ class ZkrOptions {
     var s3region: String = "us-west-2"
 
     @CommandLine.Option(
-            names = ["--info", "-i"],
-            description = ["Print information about transaction log then exit  (default: \${DEFAULT-VALUE})"],
-            defaultValue = "false"
+            names = ["--path", "-p"],
+            description = ["ZooKeeper root path for backup/restore (default: \${DEFAULT-VALUE})"],
+            defaultValue = "/"
     )
-    var info: Boolean = false
+    var path: String = "/"
 
-    @CommandLine.Parameters(index = "0", description = ["Log or backup file to restore"], arity = "1")
+    @CommandLine.Parameters(index = "0", description = ["Log or backup file"], arity = "1")
     //TODO If S3 versioning, use '?' and parse
     lateinit var txnLog: String
 
     override fun toString(): String {
         return """
-dry-run=$dryRun, verbose=$verbose, overwrite=$overwrite, host=$host, txnLog=$txnLog, exclude=$excludes, s3bucket=$s3bucket, s3region=$s3region
+verbose=$verbose, host=$host, txnLog=$txnLog, exclude=$excludes, s3bucket=$s3bucket, s3region=$s3region
         """.trimIndent()
     }
+
+    fun shouldExclude(path: String): Boolean {
+        val excluded = excludes.filter { path.startsWith(it) }
+        return excluded.isNotEmpty()
+    }
+
 
 } //-ZkrOptions

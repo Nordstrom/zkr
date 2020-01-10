@@ -1,7 +1,6 @@
 package zkr
 
 import org.apache.zookeeper.CreateMode
-import org.apache.zookeeper.KeeperException.NodeExistsException
 import org.apache.zookeeper.txn.CreateTxn
 import org.apache.zookeeper.txn.TxnHeader
 import org.slf4j.Logger
@@ -9,7 +8,7 @@ import org.slf4j.LoggerFactory
 import zkr.ZNode.Companion.txn2String
 import java.lang.invoke.MethodHandles
 
-class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient) : ZNode<CreateTxn> {
+class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient, private val overwrite: Boolean) : ZNode<CreateTxn> {
 
     override fun process(hdr: TxnHeader, txn: CreateTxn?) {
         val txnString = txn2String(hdr, txn)
@@ -31,7 +30,7 @@ class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient) :
 
     private fun create(txn: CreateTxn?) {
         if (txn != null) {
-            zk.createZNode(txn.path, txn.data, txn.acl, CreateMode.PERSISTENT, options.overwrite)
+            zk.createZNode(txn.path, txn.data, txn.acl, CreateMode.PERSISTENT, overwrite)
             logger.info("Created znode at path=${txn.path}")
         } else {
             logger.warn("Cannot process null txn")
