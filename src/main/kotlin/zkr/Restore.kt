@@ -38,7 +38,7 @@ class Restore : Runnable {
     @CommandLine.Mixin
     lateinit var restoreOptions: RestoreOptions
 
-    private val path: MutableList<BackupZNode> = Lists.newArrayList()
+    private val path = mutableListOf<BackupZNode>()//MutableList<BackupZNode> = Lists.newArrayList()
 
     override fun run() {
         logger.debug("options : $options")
@@ -48,11 +48,11 @@ class Restore : Runnable {
         //TODO S3
         var ins: InputStream? = null
         try {
-            ins = if ("-" == options.txnLog) {
+            ins = if ("-" == options.file) {
                 logger.info("Restoring from stdin")
                 BufferedInputStream(System.`in`)
             } else {
-                BufferedInputStream(FileInputStream(options.txnLog))
+                BufferedInputStream(FileInputStream(options.file))
             }
             if (restoreOptions.compress) {
                 ins = GZIPInputStream(ins)
@@ -97,11 +97,11 @@ class Restore : Runnable {
                 path.add(zNode)
             }
             if (zNode.ephemeralOwner != 0L) {
-                logger.info("Skipping ephemeral ZNode: {}", zNode.path)
+                logger.info("Skipping ephemeral ZNode: ${zNode.path}")
                 continue
             }
             if (!zNode.path.startsWith(options.path)) {
-                logger.info("Skipping ZNode (not under root path '{}'): {}", options.path, zNode.path)
+                logger.info("Skipping ZNode (not under root path '${options.path}'): ${zNode.path}")
                 continue
             }
             if (options.shouldExclude(zNode.path)) {
@@ -119,27 +119,27 @@ class Restore : Runnable {
         createPath(zk!!, getParentPath(zNode.path))
         try {
             zk.create(zNode.path, zNode.data, zNode.acls, CreateMode.PERSISTENT)
-            logger.info("Created node: {}", zNode.path)
+            logger.info("Created node: ${zNode.path}")
         } catch (e: NodeExistsException) {
             if (restoreOptions.overwrite) { // TODO: Compare with current data / acls
                 zk.setACL(zNode.path, zNode.acls, -1)
                 zk.setData(zNode.path, zNode.data, -1)
             } else {
-                logger.warn("Node already exists: {}", zNode.path)
+                logger.warn("Node already exists: ${zNode.path}")
             }
         }
     }
 
     private fun expectNextToken(jp: JsonParser, expected: JsonToken) {
         if (jp.nextToken() != expected) {
-            throw IOException(String.format("Expected: %s, Found: %s", expected, jp.currentToken))
+            throw IOException("Expected: $expected, Found: ${jp.currentToken}")
         }
     }
 
     private fun expectCurrentToken(jp: JsonParser, expected: JsonToken) {
         val currentToken = jp.currentToken
         if (currentToken != expected) {
-            throw IOException(String.format("Expected: %s, Found: %s", expected, currentToken))
+            throw IOException("Expected: $expected, Found: ${currentToken}")
         }
     }
 
@@ -154,10 +154,11 @@ class Restore : Runnable {
         }
         if (zk.exists(path, false) == null) {
             createPath(zk, getParentPath(path))
-            logger.info("Creating path: {}", path)
+            logger.info("Creating path: $path")
             try {
                 zk.create(path, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
             } catch (e: NodeExistsException) { // Race condition
+                logger.error("Race Condition detected: $e")
             }
         }
     }
@@ -183,7 +184,7 @@ class Restore : Runnable {
             } else if (ZNode.FIELD_ACLS.equals(fieldName)) {
                 readACLs(jp, acls)
             } else {
-                logger.debug("Ignored field: {}", fieldName)
+                logger.debug("Ignored field: $fieldName")
             }
         }
         if (!seenFields.containsAll(REQUIRED_ZNODE_FIELDS)) {

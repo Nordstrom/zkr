@@ -41,7 +41,7 @@ class Logs : Runnable {
             zk = ZkClient(host = options.host, connect = !(restore.info && options.dryRun))
 
             val stream = BinaryInputArchiveFactory(
-                    txnLog = options.txnLog,
+                    txnLog = options.file,
                     s3bucket = options.s3bucket,
                     s3region = options.s3region
             ).create()
@@ -131,7 +131,7 @@ class Logs : Runnable {
     private fun summary(numberTxn: Int, earliest: Instant, latest: Instant, millis: Long): String = """
 
   ,-----------.  
-(_\  ZooKeeper \ title    : ${options.txnLog}
+(_\  ZooKeeper \ title    : ${options.file}
    | Reaper    | txn      : $numberTxn
    | Summary   | from     : $earliest
   _|           | to       : $latest

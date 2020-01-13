@@ -66,7 +66,7 @@ class BinaryInputArchiveFactory(
         val s3 = S3Client.builder()
                 .region(s3region)
                 .build()
-        //TODO parse versionId if '?' in txnLog
+        //TODO parse versionId if '?' in file
         return s3.getObject(
                 GetObjectRequest.builder()
                         .bucket(s3bucket)

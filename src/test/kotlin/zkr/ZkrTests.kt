@@ -1,5 +1,6 @@
 package zkr
 
+import org.apache.curator.test.TestingServer
 import org.apache.zookeeper.ZooDefs
 import org.apache.zookeeper.txn.CreateTxn
 import org.apache.zookeeper.txn.TxnHeader
@@ -11,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+
 // kotlin-test
 class ZkrTest {
     @Test
@@ -21,7 +23,20 @@ class ZkrTest {
 
 // spek-framework
 class ZkrTests : Spek({
+
+    val ZK_PORT = 12181
+
     describe("zkr") {
+        lateinit var zk: TestingServer
+        lateinit var opts: ZkrOptions
+        beforeEachTest {
+            zk = TestingServer(ZK_PORT, true)
+
+            opts = ZkrOptions()
+            opts.host = "localhost:$ZK_PORT"
+        }
+        afterEachTest { zk.close() }
+
         it("nop-test") {
             assertEquals(42, 42)
         }
@@ -42,15 +57,16 @@ class ZkrTests : Spek({
 
         it("can handle CREATE znode transaction") {
             val app = Zkr()
-            val opts = ZkrOptions()
-            opts.host = "nohost:1234"
-            opts.txnLog = "nolog"
+            opts.host = "localhost:2181"
+            opts.file = "nolog"
             opts.dryRun = true
             opts.excludes = emptyList()
-            //TODO mock ZkClient if not 'dryRun'
-            app.zk = ZkClient(opts)
+            val restore = RestoreOptions()
+            val logs = Logs()
+            logs.options = opts
+            logs.restore = restore
+            logs.zk = ZkClient(host = opts.host, connect = true)
 
-            app.options = opts
             val hdr = TxnHeader()
             hdr.clientId = 111
             hdr.cxid = 222
@@ -59,7 +75,7 @@ class ZkrTests : Spek({
             hdr.zxid = 333
             val txn = CreateTxn()
             txn.path = "/"
-            app.processTxn(hdr, txn)
+            logs.processTxn(hdr, txn)
 
             //TODO asserts
         }

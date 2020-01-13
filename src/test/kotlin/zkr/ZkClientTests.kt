@@ -1,14 +1,12 @@
 package zkr
 
+import org.apache.curator.test.TestingServer
+import org.apache.zookeeper.CreateMode
+import org.apache.zookeeper.ZooDefs
+import org.apache.zookeeper.data.ACL
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 import kotlin.test.assertEquals
-import org.apache.curator.test.TestingServer
-import org.apache.zookeeper.CreateMode
-import org.apache.zookeeper.KeeperException
-import org.apache.zookeeper.ZooDefs
-import org.apache.zookeeper.data.ACL
-import org.apache.zookeeper.data.Id
 
 class ZkClientTests : Spek({
 
@@ -34,7 +32,7 @@ class ZkClientTests : Spek({
 
 
         it("can initialize with ZooKeeper") {
-            ZkClient(opts)
+            ZkClient(opts.host, true)
         }
 
         it("TODO: can create a znode") {
@@ -49,7 +47,7 @@ class ZkClientTests : Spek({
             println("acls.tested=$acls")
             println("acls.unsafe=${ZooDefs.Ids.OPEN_ACL_UNSAFE}")
             val mode = CreateMode.PERSISTENT
-            val zkc = ZkClient(opts)
+            ZkClient(opts.host, true)
             //TODO
 //            try {
 //                zkc.createZNode(path, data, acls, mode, true)

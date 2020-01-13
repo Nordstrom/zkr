@@ -18,9 +18,11 @@ import org.apache.zookeeper.data.Stat
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.BufferedOutputStream
-import java.io.FileOutputStream
-import java.io.OutputStream
+import software.amazon.awssdk.core.sync.ResponseTransformer
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import java.io.*
 import java.lang.invoke.MethodHandles
 import java.time.Duration
 import java.time.Instant
@@ -79,7 +81,7 @@ class Backup : Runnable {
     suspend fun runBackup() {
         val dur = Duration.ofMinutes(backupOptions.repeatMin)
 
-        logger.info("backup     : ${options.txnLog}")
+        logger.info("backup     : ${options.file}")
         logger.info("compression: ${backupOptions.compress}")
         logger.info("excluding  : ${options.excludes}")
         logger.info("repeat     : $dur, ${dur.toMillis()} ms")
@@ -113,27 +115,15 @@ class Backup : Runnable {
     fun doBackup() {
         numberNodes = 0
         val t0 = Instant.now()
-        val timestamp = DATE_FORMATTER.format(t0)
-        val suffix = if (backupOptions.compress) "gz" else "json"
-        val file = "${options.txnLog}-$timestamp.$suffix"
-        logger.info("backup to  : $file")
-        //TODO S3
-        var os: OutputStream
-        os = if ("-" == options.txnLog) {
-            System.out
-        } else {
-            BufferedOutputStream(FileOutputStream(file))
-        }
+        val os = BackupArchive(name = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region)
+        logger.info("backup to  : $os.file")
         try {
-            if (backupOptions.compress) {
-                os = GZIPOutputStream(os)
-            }
             backup(os)
         } finally {
-            os.flush()
-            os.close()
+            // backup() already calls os.close()
+            //os.close()
         }
-        logger.info("Summary ${summary(file, numberNodes, t0)}")
+        logger.info("Summary ${summary(os.file, numberNodes, t0)}")
     }
 
     fun backup(os: OutputStream) {
@@ -152,6 +142,7 @@ class Backup : Runnable {
             }
             jgen.writeEndObject()
         } finally {
+            //NB: this will also call 'close()' on the output stream.
             jgen?.close()
             zk.close()
         }
@@ -186,17 +177,14 @@ class Backup : Runnable {
                     doBackup(zk, jgen, fullChildPath)
                 }
             }
-
         } catch (e: KeeperException.NoNodeException) {
             logger.warn("Node disappeared during backup: path=$path")
         } catch (e: KeeperException) {
             logger.warn("Unable to read znode: $e")
-
         }
     }
 
     private fun dumpNode(jgen: JsonGenerator?, path: String?, stat: Stat, acls: List<ACL>, data: ByteArray?) {
-//        if (data != null && path != null && path.contains("/kafka/config/users/")) {
         if (data != null && path != null) {
             logger.debug(".dump-node\npath=$path\ndata_s=${String(data)}\ndata_a=${Arrays.toString(data)}")
         }
@@ -244,8 +232,8 @@ class Backup : Runnable {
     private fun summary(file: String, numberNodes: Int, start: Instant): String = """
 
   ,-----------.  
-(_\  ZooKeeper \ title   : $file
-   | Reaper    | nodes   : $numberNodes
+(_\  ZooKeeper \ file    : ${if (options.s3bucket.isNotEmpty()) "s3://${options.s3bucket}/" else ""}$file
+   | Reaper    | znodes  : $numberNodes
    | Summary   | duration: ${Duration.between(start, Instant.now())}
   _|           |
  (_/_____(*)___/
@@ -256,6 +244,5 @@ class Backup : Runnable {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
-        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddhhmmz").withZone(ZoneId.of("Z"))
     }
 }

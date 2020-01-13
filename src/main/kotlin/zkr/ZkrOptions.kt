@@ -62,11 +62,11 @@ class ZkrOptions {
 
     @CommandLine.Parameters(index = "0", description = ["Log or backup file"], arity = "1")
     //TODO If S3 versioning, use '?' and parse
-    lateinit var txnLog: String
+    lateinit var file: String
 
     override fun toString(): String {
         return """
-verbose=$verbose, host=$host, txnLog=$txnLog, exclude=$excludes, s3bucket=$s3bucket, s3region=$s3region
+verbose=$verbose, host=$host, file=$file, exclude=$excludes, s3bucket=$s3bucket, s3region=$s3region
         """.trimIndent()
     }
 
