@@ -4,25 +4,11 @@ import picocli.CommandLine
 
 class ZkrOptions {
     @CommandLine.Option(
-            names = ["--dry-run", "-d"],
-            description = ["Do not actually perform the actions (default: \${DEFAULT-VALUE})"],
-            defaultValue = "false"
-    )
-    var dryRun: Boolean = false
-
-    @CommandLine.Option(
             names = ["--verbose", "-v"],
             description = ["Verbose logging output (default: \${DEFAULT-VALUE})"],
             defaultValue = "false"
     )
     var verbose: Boolean = false
-
-//    @CommandLine.Option(
-//            names = ["--overwrite-existing", "-o"],
-//            description = ["Overwrite existing znodes (default: \${DEFAULT-VALUE})"],
-//            defaultValue = "false"
-//    )
-//    var overwrite: Boolean = false
 
     @CommandLine.Option(
             names = ["--zookeeper", "-z"],
@@ -37,11 +23,18 @@ class ZkrOptions {
             split = ","
     )
     var excludes: List<String> = mutableListOf()
-    //TODO includes? regex
+
+    //TODO regex
+    @CommandLine.Option(
+            names = ["--include", "-i"],
+            description = ["Comma-delimited list of paths to include"],
+            split = ","
+    )
+    var includes: List<String> = mutableListOf()
 
     @CommandLine.Option(
             names = ["--s3-bucket"],
-            description = ["S3 bucket containing Exhibitor transaction logs or backup files"],
+            description = ["S3 bucket containing Exhibitor transaction logs/backups or zkr backup files"],
             defaultValue = ""
     )
     var s3bucket: String = ""
@@ -70,9 +63,18 @@ verbose=$verbose, host=$host, file=$file, exclude=$excludes, s3bucket=$s3bucket,
         """.trimIndent()
     }
 
+    //TODO regex
     fun shouldExclude(path: String): Boolean {
         val excluded = excludes.filter { path.startsWith(it) }
         return excluded.isNotEmpty()
+    }
+
+    //TODO fix and/or regex
+    fun shouldInclude(path: String): Boolean {
+        if (includes.isEmpty()) return true
+
+        val included = includes.filter { path.startsWith(it) }
+        return included.isNotEmpty()
     }
 
 

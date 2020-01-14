@@ -4,6 +4,13 @@ import picocli.CommandLine
 
 class RestoreOptions {
     @CommandLine.Option(
+            names = ["--dry-run", "-d"],
+            description = ["Do not actually perform the actions (default: \${DEFAULT-VALUE})"],
+            defaultValue = "false"
+    )
+    var dryRun: Boolean = false
+
+    @CommandLine.Option(
             names = ["--compress", "-c"],
             description = ["Compressed input (default: \${DEFAULT-VALUE})"],
             defaultValue = "false"
@@ -18,7 +25,7 @@ class RestoreOptions {
     var overwrite: Boolean = false
 
     @CommandLine.Option(
-            names = ["--info", "-i"],
+            names = ["--info"],
             description = ["Print information about transaction log or backup then exit  (default: \${DEFAULT-VALUE})"],
             defaultValue = "false"
     )

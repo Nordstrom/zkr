@@ -16,6 +16,7 @@ plugins {
 
 ext {
     kotlin_version = '1.3.61'
+    kotlin_serialization_runtime = '0.14.0'
     coroutines = '1.3.2'
 }
 
@@ -31,8 +32,10 @@ dependencies {
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
 
     // Use the Kotlin standard library.
+    compile "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlin_serialization_runtime"
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines"
+    implementation "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
 
     // Configuration and metrics
     implementation 'io.github.config4k:config4k:0.4.1'

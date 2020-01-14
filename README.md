@@ -4,10 +4,103 @@ Utility to view and restore ZooKeeper transactions from transaction log or Exhib
 
 ## Background
 
-This project provides a command-line utility that can be used to replay transactions from Exhibitor transaction log
-and backup archive (gzip'd) logs.  Backup archives are automatically detected.
+This project provides a command-line utility that can be used to backup and restore ZooKeeper znodes in JSON, or compress to a file or S3.
 
-This utility ignores ephemeral znodes.
+The `logs` command can replay transactions from Exhibitor transaction log and backup archive (gzip'd) logs. The `logs` command ignores ephemeral znodes.
+
+## Usage
+
+`zkr help`
+
+```
+Usage: zkr [-hV] [COMMAND]
+ZooKeeper Reaper - ZooKeeper backup/restore utility
+  -h, --help      Show this help message and exit.
+  -V, --version   Print version information and exit.
+Commands:
+  help     Displays help information about the specified command
+  backup   Backup ZooKeeper znodes
+  logs     View/write ZooKeeper/Exhibitor transaction logs and backups
+  restore  Restore ZooKeeper znodes from backup
+v0.2α
+```
+
+`zkr backup help`
+
+```
+Usage: zkr backup [-cv] [-eph] [--pretty] [-p=<path>] [-r=<repeatMin>] [--s3-bucket=<s3bucket>]
+                  [--s3-region=<s3region>] [-z=<host>] [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,
+                  <includes>...]]... <file> [COMMAND]
+Backup ZooKeeper znodes
+      <file>               Log or backup file
+  -c, --compress           Compress output (default: false)
+  -e, --exclude=<excludes>[,<excludes>...]
+                           Comma-delimited list of paths to exclude
+      -eph, --ephemeral    Backup ephemeral znodes (default: false)
+  -i, --include=<includes>[,<includes>...]
+                           Comma-delimited list of paths to include
+  -p, --path=<path>        ZooKeeper root path for backup/restore (default: /)
+      --pretty             Pretty print JSON output (default: false)
+  -r, --repeat.min=<repeatMin>
+                           Perform periodic backup every <repeatMin> minutes
+      --s3-bucket=<s3bucket>
+                           S3 bucket containing Exhibitor transaction logs/backups or zkr backup files
+      --s3-region=<s3region>
+                           AWS Region (default: us-west-2)
+  -v, --verbose            Verbose logging output (default: false)
+  -z, --zookeeper=<host>   Target ZooKeeper host:port (default: localhost:2181)
+Commands:
+  help  Displays help information about the specified command
+```
+
+`zkr restore help`
+
+```
+Usage: zkr restore [-cdov] [--info] [-p=<path>] [--s3-bucket=<s3bucket>] [--s3-region=<s3region>] [-z=<host>]
+                   [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,<includes>...]]... <file> [COMMAND]
+Restore ZooKeeper znodes from backup
+      <file>                 Log or backup file
+  -c, --compress             Compressed input (default: false)
+  -d, --dry-run              Do not actually perform the actions (default: false)
+  -e, --exclude=<excludes>[,<excludes>...]
+                             Comma-delimited list of paths to exclude
+  -i, --include=<includes>[,<includes>...]
+                             Comma-delimited list of paths to include
+      --info                 Print information about transaction log or backup then exit  (default: false)
+  -o, --overwrite-existing   Overwrite existing znodes (default: false)
+  -p, --path=<path>          ZooKeeper root path for backup/restore (default: /)
+      --s3-bucket=<s3bucket> S3 bucket containing Exhibitor transaction logs/backups or zkr backup files
+      --s3-region=<s3region> AWS Region (default: us-west-2)
+  -v, --verbose              Verbose logging output (default: false)
+  -z, --zookeeper=<host>     Target ZooKeeper host:port (default: localhost:2181)
+Commands:
+  help  Displays help information about the specified command
+```
+
+`zkr logs help`
+
+```
+Usage: zkr logs [-cdov] [--info] [-p=<path>] [--s3-bucket=<s3bucket>] [--s3-region=<s3region>] [-z=<host>]
+                [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,<includes>...]]... <file> [COMMAND]
+View/write ZooKeeper/Exhibitor transaction logs and backups
+      <file>                 Log or backup file
+  -c, --compress             Compressed input (default: false)
+  -d, --dry-run              Do not actually perform the actions (default: false)
+  -e, --exclude=<excludes>[,<excludes>...]
+                             Comma-delimited list of paths to exclude
+  -i, --include=<includes>[,<includes>...]
+                             Comma-delimited list of paths to include
+      --info                 Print information about transaction log or backup then exit  (default: false)
+  -o, --overwrite-existing   Overwrite existing znodes (default: false)
+  -p, --path=<path>          ZooKeeper root path for backup/restore (default: /)
+      --s3-bucket=<s3bucket> S3 bucket containing Exhibitor transaction logs/backups or zkr backup files
+      --s3-region=<s3region> AWS Region (default: us-west-2)
+  -v, --verbose              Verbose logging output (default: false)
+  -z, --zookeeper=<host>     Target ZooKeeper host:port (default: localhost:2181)
+Commands:
+  help  Displays help information about the specified command
+```
+
 
 ## Build
 
@@ -45,7 +138,7 @@ Client {
 
 Invoke `zkr` thusly:
 
-`java -Djava.security.auth.login.config=./jaas.conf -cp build/libs/zkr-all.jar zkr.Zkr [options] log`
+`java -Djava.security.auth.login.config=./jaas.conf -cp build/libs/zkr-all.jar zkr.Zkr <command> <options>`
 
 ## Restoring Kafka
 
@@ -55,3 +148,4 @@ but must be done in a specific order:
 - start Exhibitor/ZooKeeper (ONLY) with backups `disabled` (so you don't accidentally overwrite your backup files)
 - Run `zkr` with `--overwrite-existing` option for all log files desired.
 - start brokers, et al
+

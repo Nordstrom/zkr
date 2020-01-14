@@ -2,6 +2,7 @@ package zkr
 
 import org.apache.curator.test.TestingServer
 import org.apache.zookeeper.ZooDefs
+import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.txn.CreateTxn
 import org.apache.zookeeper.txn.TxnHeader
 import org.spekframework.spek2.Spek
@@ -55,11 +56,10 @@ class ZkrTests : Spek({
             //TODO how to capture and search stderr for expected content?
         }
 
-        it("can handle CREATE znode transaction") {
+        it("can process CREATE znode transaction") {
             val app = Zkr()
             opts.host = "localhost:2181"
             opts.file = "nolog"
-            opts.dryRun = true
             opts.excludes = emptyList()
             val restore = RestoreOptions()
             val logs = Logs()
@@ -75,6 +75,10 @@ class ZkrTests : Spek({
             hdr.zxid = 333
             val txn = CreateTxn()
             txn.path = "/"
+            val acls = mutableListOf<ACL>(
+                    ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE)
+            )
+            txn.acl = acls
             logs.processTxn(hdr, txn)
 
             //TODO asserts

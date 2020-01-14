@@ -5,7 +5,7 @@ import org.apache.zookeeper.txn.TxnHeader
 import java.text.SimpleDateFormat
 import java.util.*
 
-interface ZNode<T : Any> {
+interface ZNodeTxn<T : Any> {
     val options: ZkrOptions
     val zk: ZkClient
 
@@ -34,33 +34,6 @@ interface ZNode<T : Any> {
             val type = ZkOpCode.op2String(hdr.type) + "." + if (txn == null) "class=" else txn.javaClass.simpleName
             return String.format(HDR_FORMAT, date, scid, cxid, zxid, type)
         }
-
-        fun createFullPath(path: String, childPath: String): String {
-            return if (path.endsWith("/")) {
-                path + childPath
-            } else {
-                "$path/$childPath"
-            }
-        }
-
-        fun <T> nullToEmpty(original: List<T>?): List<T> {
-            return original ?: emptyList()
-        }
-
-        const val FIELD_AVERSION = "aversion"
-        const val FIELD_CTIME = "ctime"
-        const val FIELD_CVERSION = "cversion"
-        const val FIELD_CZXID = "czxid"
-        const val FIELD_EPHEMERAL_OWNER = "ephemeralOwner"
-        const val FIELD_MTIME = "mtime"
-        const val FIELD_MZXID = "mzxid"
-        const val FIELD_PZXID = "pzxid"
-        const val FIELD_VERSION = "version"
-        const val FIELD_DATA = "data"
-        const val FIELD_ACLS = "acls"
-        const val FIELD_ACL_ID = "id"
-        const val FIELD_ACL_SCHEME = "scheme"
-        const val FIELD_ACL_PERMS = "perms"
     }//-companion
 
-} //-ZNode
+} //-ZNodeTxn

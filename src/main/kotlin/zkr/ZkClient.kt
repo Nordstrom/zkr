@@ -14,7 +14,7 @@ import java.lang.invoke.MethodHandles
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class ZkClient(val host: String, connect: Boolean = true) {
+class ZkClient(val host: String, val connect: Boolean = true) {
     var zk: ZooKeeper? = null
 
     init {
@@ -42,7 +42,7 @@ class ZkClient(val host: String, connect: Boolean = true) {
                 throw e
             }
         }
-    }
+    } //-init
 
     fun createZNode(path: String, data: ByteArray?, acls: List<ACL>, mode: CreateMode, overwrite: Boolean = false) {
         logger.trace("create-znode:path=|$path|")
@@ -75,6 +75,10 @@ class ZkClient(val host: String, connect: Boolean = true) {
     fun deleteZNode(path: String) {
         logger.trace("delete-znode:path=|$path|")
         zk?.delete(path, -1)
+    }
+
+    fun exists(path: String, watch: Boolean = false): Boolean {
+        return zk?.exists(path, watch) == null
     }
 
     fun setAcls(path: String, acls: List<ACL>) {
@@ -113,7 +117,7 @@ class ZkClient(val host: String, connect: Boolean = true) {
 
     fun close() {
         zk?.close()
-        logger.info("close connection to $host")
+        if (connect) logger.info("close connection to $host")
     }
 
     private fun getParentPath(path: String): String {

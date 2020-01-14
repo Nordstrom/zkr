@@ -4,22 +4,22 @@ import org.apache.zookeeper.txn.DeleteTxn
 import org.apache.zookeeper.txn.TxnHeader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import zkr.ZNode.Companion.txn2String
+import zkr.ZNodeTxn.Companion.txn2String
 import java.lang.invoke.MethodHandles
 
-class ZNodeDelete(override val options: ZkrOptions, override val zk: ZkClient) : ZNode<DeleteTxn> {
+class ZNodeTxnDelete(override val options: ZkrOptions, override val zk: ZkClient, private val dryRun: Boolean = false) : ZNodeTxn<DeleteTxn> {
 
     override fun process(hdr: TxnHeader, txn: DeleteTxn?) {
         val txnString = txn2String(hdr, txn)
         val s = "$txnString\n  path = ${txn?.path}"
         if (txn != null) {
             if (shouldExclude(txn.path)) {
-                ZNodeCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
+                ZNodeTxnCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
             if (options.verbose) logger.info(s)
 
-            if (options.dryRun) {
+            if (dryRun) {
                 logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
@@ -34,4 +34,4 @@ class ZNodeDelete(override val options: ZkrOptions, override val zk: ZkClient) :
     companion object {
         val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
     }
-} //-ZNodeDelete
+} //-ZNodeTxnDelete

@@ -22,6 +22,9 @@ import kotlin.system.measureTimeMillis
 @CommandLine.Command(
         name = "logs",
         description = ["View/write ZooKeeper/Exhibitor transaction logs and backups"],
+        subcommands = [
+            CommandLine.HelpCommand::class
+        ],
         usageHelpWidth = 120
 )
 class Logs : Runnable {
@@ -38,7 +41,7 @@ class Logs : Runnable {
         try {
             logger.info("excluding  : ${options.excludes}")
             if (restore.overwrite) logger.warn("overwrite  : ${restore.overwrite} !!")
-            zk = ZkClient(host = options.host, connect = !(restore.info && options.dryRun))
+            zk = ZkClient(host = options.host, connect = !(restore.info && restore.dryRun))
 
             val stream = BinaryInputArchiveFactory(
                     txnLog = options.file,
@@ -104,18 +107,18 @@ class Logs : Runnable {
         when (txn) {
             //exhibitor: Create-Persistent
             is CreateTxn -> {
-                ZNodeCreate(zk = zk, options = options, overwrite = restore.overwrite).process(hdr, txn)
+                ZNodeTxnCreate(zk = zk, options = options, overwrite = restore.overwrite, dryRun = restore.dryRun).process(hdr, txn)
             }
             //exhibitor: Delete
             is DeleteTxn -> {
-                ZNodeDelete(zk = zk, options = options).process(hdr, txn)
+                ZNodeTxnDelete(zk = zk, options = options, dryRun = restore.dryRun).process(hdr, txn)
             }
             //exhibitor: SetData
             is SetDataTxn -> {
-                ZNodeSetData(zk = zk, options = options).process(hdr, txn)
+                ZNodeTxnSetData(zk = zk, options = options, dryRun = restore.dryRun).process(hdr, txn)
             }
             is SetACLTxn -> {
-                ZNodeSetACL(zk = zk, options = options).process(hdr, txn)
+                ZNodeTxnSetACL(zk = zk, options = options, dryRun = restore.dryRun).process(hdr, txn)
             }
             is MultiTxn -> {
                 txn.txns.forEach {
@@ -123,7 +126,7 @@ class Logs : Runnable {
                 }
             }
             else -> {
-                ZNodeIgnore(zk = zk, options = options).process(hdr, txn)
+                ZNodeTxnIgnore(zk = zk, options = options).process(hdr, txn)
             }
         }
     }

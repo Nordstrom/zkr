@@ -11,30 +11,27 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.selects.select
+import kotlinx.serialization.UnstableDefault
+import kotlinx.serialization.json.Json
 import org.apache.zookeeper.KeeperException
-import org.apache.zookeeper.ZooKeeper
 import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.data.Stat
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import software.amazon.awssdk.core.sync.ResponseTransformer
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import java.io.*
 import java.lang.invoke.MethodHandles
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.*
-import java.util.zip.GZIPOutputStream
 import kotlin.system.exitProcess
 
 @CommandLine.Command(
         name = "backup",
         description = ["Backup ZooKeeper znodes"],
+        subcommands = [
+            CommandLine.HelpCommand::class
+        ],
         usageHelpWidth = 120
 )
 class Backup : Runnable {
@@ -44,11 +41,14 @@ class Backup : Runnable {
     @CommandLine.Mixin
     lateinit var backupOptions: BackupOptions
 
-    lateinit var cancel: Channel<Unit>
+    private lateinit var cancel: Channel<Unit>
 
     //TODO: Don't use class variable!!
-    var numberNodes = 0
+    private var numberNodes = 0
 
+    val znodes = mutableListOf<BackupZNode>()
+
+    @UnstableDefault
     @ObsoleteCoroutinesApi
     @InternalCoroutinesApi
     override fun run() {
@@ -59,7 +59,7 @@ class Backup : Runnable {
         cancel = CliHelper.trapSignal("INT")
         runBlocking {
             logger.info("CROSSING.THE.STREAMS")
-            val jobs = mutableListOf<Job>(launch(Dispatchers.IO) { runBackup() })
+            val jobs = mutableListOf(launch(Dispatchers.IO) { runBackup() })
 
             // Wait for cancel signal
             select<Unit> {
@@ -76,6 +76,7 @@ class Backup : Runnable {
 
     }
 
+    @UnstableDefault
     @ObsoleteCoroutinesApi
     @InternalCoroutinesApi
     suspend fun runBackup() {
@@ -84,8 +85,8 @@ class Backup : Runnable {
         logger.info("backup     : ${options.file}")
         logger.info("compression: ${backupOptions.compress}")
         logger.info("excluding  : ${options.excludes}")
+        logger.info("including  : ${options.includes}")
         logger.info("repeat     : $dur, ${dur.toMillis()} ms")
-        logger.info("dry-run    : ${options.dryRun}")
 
         if (backupOptions.repeatMin > 0) {
             val ticktock = ticker(delayMillis = dur.toMillis(), initialDelayMillis = 0)
@@ -112,22 +113,24 @@ class Backup : Runnable {
         }
     }
 
-    fun doBackup() {
+    @UnstableDefault
+    private fun doBackup() {
+        val zkc = ZkClient(host = options.host, connect = true)
+
+        // Only execute backup if connector to ensemble leader
+
         numberNodes = 0
         val t0 = Instant.now()
-        val os = BackupArchive(name = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region)
+        val os = BackupArchiveOutputStream(name = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region)
         logger.info("backup to  : $os.file")
-        try {
-            backup(os)
-        } finally {
-            // backup() already calls os.close()
-            //os.close()
-        }
+
+        backup(zkc, os)
+
         logger.info("Summary ${summary(os.file, numberNodes, t0)}")
     }
 
-    fun backup(os: OutputStream) {
-        val zk = ZkClient(host = options.host, connect = true)
+    @UnstableDefault
+    private fun backup(zkc: ZkClient, os: OutputStream) {
         var jgen: JsonGenerator? = null
         try {
             jgen = JsonFactory().createGenerator(os)
@@ -135,27 +138,30 @@ class Backup : Runnable {
                 jgen.prettyPrinter = DefaultPrettyPrinter()
             }
             jgen.writeStartObject()
-            if (zk.zk?.exists(options.path, false) == null) {
+            if (zkc.exists(options.path)) {
                 logger.warn("Root path not found: ${options.path}")
             } else {
-                doBackup(zk.zk, jgen, options.path)
+                doBackup(zkc, jgen, options.path)
             }
             jgen.writeEndObject()
         } finally {
             //NB: this will also call 'close()' on the output stream.
             jgen?.close()
-            zk.close()
+            zkc.close()
         }
     }
 
-    private fun doBackup(zk: ZooKeeper?, jgen: JsonGenerator?, path: String) {
+    @UnstableDefault
+    private fun doBackup(zkc: ZkClient, jgen: JsonGenerator?, path: String) {
         try {
+            val zk = zkc.zk
             val stat = Stat()
-            var acls: List<ACL> = ZNode.nullToEmpty(zk!!.getACL(path, stat))
             if (stat.ephemeralOwner != 0L && !backupOptions.ephemeral) {
                 logger.debug("Skipping ephemeral node: $path")
                 return
             }
+            //TODO ZkClient.getAcls()
+            var acls: List<ACL> = nullToEmpty(zk!!.getACL(path, stat))
             val dataStat = Stat()
             var data = zk.getData(path, false, dataStat)
             var i = 0
@@ -169,12 +175,12 @@ class Backup : Runnable {
             logger.debug("Backing up node: $path")
             dumpNode(jgen, path, stat, acls, data)
             numberNodes++
-            val childPaths: List<String> = ZNode.nullToEmpty(zk.getChildren(path, false, null))
-            Collections.sort(childPaths)
+            val childPaths: MutableList<String> = nullToEmpty(zk.getChildren(path, false, null))
+            childPaths.sort()
             for (childPath in childPaths) {
-                val fullChildPath: String = ZNode.createFullPath(path, childPath)
-                if (!options.shouldExclude(fullChildPath)) {
-                    doBackup(zk, jgen, fullChildPath)
+                val fullChildPath: String = createFullPath(path, childPath)
+                if (!options.shouldExclude(fullChildPath) && options.shouldInclude(fullChildPath)) {
+                    doBackup(zkc, jgen, fullChildPath)
                 }
             }
         } catch (e: KeeperException.NoNodeException) {
@@ -190,52 +196,66 @@ class Backup : Runnable {
         }
         jgen!!.writeObjectFieldStart(path)
         // The number of changes to the ACL of this znode.
-        jgen.writeNumberField(ZNode.FIELD_AVERSION, stat.aversion)
+        jgen.writeNumberField(BackupZNode.FIELD_AVERSION, stat.aversion)
         // The time in milliseconds from epoch when this znode was created.
-        jgen.writeNumberField(ZNode.FIELD_CTIME, stat.ctime)
+        jgen.writeNumberField(BackupZNode.FIELD_CTIME, stat.ctime)
         // The number of changes to the children of this znode.
-        jgen.writeNumberField(ZNode.FIELD_CVERSION, stat.cversion)
+        jgen.writeNumberField(BackupZNode.FIELD_CVERSION, stat.cversion)
         // The zxid of the change that caused this znode to be created.
-        jgen.writeNumberField(ZNode.FIELD_CZXID, stat.czxid)
+        jgen.writeNumberField(BackupZNode.FIELD_CZXID, stat.czxid)
         // The length of the data field of this znode.
         // jgen.writeNumberField("dataLength", stat.getDataLength());
         // The session id of the owner of this znode if the znode is an ephemeral node. If it is not an ephemeral node,
         // it will be zero.
-        jgen.writeNumberField(ZNode.FIELD_EPHEMERAL_OWNER, stat.ephemeralOwner)
+        jgen.writeNumberField(BackupZNode.FIELD_EPHEMERAL_OWNER, stat.ephemeralOwner)
         // The time in milliseconds from epoch when this znode was last modified.
-        jgen.writeNumberField(ZNode.FIELD_MTIME, stat.mtime)
+        jgen.writeNumberField(BackupZNode.FIELD_MTIME, stat.mtime)
         // The zxid of the change that last modified this znode.
-        jgen.writeNumberField(ZNode.FIELD_MZXID, stat.mzxid)
+        jgen.writeNumberField(BackupZNode.FIELD_MZXID, stat.mzxid)
         // The number of children of this znode.
         jgen.writeNumberField("numChildren", stat.numChildren)
         // last modified children?
-        jgen.writeNumberField(ZNode.FIELD_PZXID, stat.pzxid)
+        jgen.writeNumberField(BackupZNode.FIELD_PZXID, stat.pzxid)
         // The number of changes to the data of this znode.
-        jgen.writeNumberField(ZNode.FIELD_VERSION, stat.version)
+        jgen.writeNumberField(BackupZNode.FIELD_VERSION, stat.version)
         if (data != null) {
-            jgen.writeBinaryField(ZNode.FIELD_DATA, data)
+            jgen.writeBinaryField(BackupZNode.FIELD_DATA, data)
         } else {
-            jgen.writeNullField(ZNode.FIELD_DATA)
+            jgen.writeNullField(BackupZNode.FIELD_DATA)
         }
-        jgen.writeArrayFieldStart(ZNode.FIELD_ACLS)
+        jgen.writeArrayFieldStart(BackupZNode.FIELD_ACLS)
         for (acl in acls) {
             jgen.writeStartObject()
-            jgen.writeStringField(ZNode.FIELD_ACL_ID, acl.id.id)
-            jgen.writeStringField(ZNode.FIELD_ACL_SCHEME, acl.id.scheme)
-            jgen.writeNumberField(ZNode.FIELD_ACL_PERMS, acl.perms)
+            jgen.writeStringField(BackupZNode.FIELD_ACL_ID, acl.id.id)
+            jgen.writeStringField(BackupZNode.FIELD_ACL_SCHEME, acl.id.scheme)
+            jgen.writeNumberField(BackupZNode.FIELD_ACL_PERMS, acl.perms)
             jgen.writeEndObject()
         }
         jgen.writeEndArray()
         jgen.writeEndObject()
     }
 
+    fun createFullPath(path: String, childPath: String): String {
+        return if (path.endsWith("/")) {
+            path + childPath
+        } else {
+            "$path/$childPath"
+        }
+    }
+
+    fun <T> nullToEmpty(original: List<T>?): MutableList<T> {
+        return original as MutableList<T>? ?: mutableListOf()
+    }
+
+
+    //TODO file size
     private fun summary(file: String, numberNodes: Int, start: Instant): String = """
 
   ,-----------.  
 (_\  ZooKeeper \ file    : ${if (options.s3bucket.isNotEmpty()) "s3://${options.s3bucket}/" else ""}$file
-   | Reaper    | znodes  : $numberNodes
-   | Summary   | duration: ${Duration.between(start, Instant.now())}
-  _|           |
+   | Reaper    | bytes   : TBD
+   | Summary   | znodes  : $numberNodes
+  _|           | duration: ${Duration.between(start, Instant.now())}
  (_/_____(*)___/
           \\
            ))

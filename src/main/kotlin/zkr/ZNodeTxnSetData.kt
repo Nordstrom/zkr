@@ -4,10 +4,10 @@ import org.apache.zookeeper.txn.SetDataTxn
 import org.apache.zookeeper.txn.TxnHeader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import zkr.ZNode.Companion.txn2String
+import zkr.ZNodeTxn.Companion.txn2String
 import java.lang.invoke.MethodHandles
 
-class ZNodeSetData(override val options: ZkrOptions, override val zk: ZkClient) : ZNode<SetDataTxn> {
+class ZNodeTxnSetData(override val options: ZkrOptions, override val zk: ZkClient, private val dryRun: Boolean = false) : ZNodeTxn<SetDataTxn> {
 
     override fun process(hdr: TxnHeader, txn: SetDataTxn?) {
         val txnString = txn2String(hdr, txn)
@@ -19,10 +19,10 @@ class ZNodeSetData(override val options: ZkrOptions, override val zk: ZkClient) 
         // SetDataTxn
         if (txn != null) {
             if (shouldExclude(txn.path)) {
-                ZNodeCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
+                ZNodeTxnCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
-            if (options.dryRun) {
+            if (dryRun) {
                 logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
@@ -40,4 +40,4 @@ class ZNodeSetData(override val options: ZkrOptions, override val zk: ZkClient) 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
     }
-} //-ZNodeSetData
+} //-ZNodeTxnSetData

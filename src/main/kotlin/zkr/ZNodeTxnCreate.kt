@@ -5,10 +5,10 @@ import org.apache.zookeeper.txn.CreateTxn
 import org.apache.zookeeper.txn.TxnHeader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import zkr.ZNode.Companion.txn2String
+import zkr.ZNodeTxn.Companion.txn2String
 import java.lang.invoke.MethodHandles
 
-class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient, private val overwrite: Boolean) : ZNode<CreateTxn> {
+class ZNodeTxnCreate(override val options: ZkrOptions, override val zk: ZkClient, private val overwrite: Boolean = false, private val dryRun: Boolean = false) : ZNodeTxn<CreateTxn> {
 
     override fun process(hdr: TxnHeader, txn: CreateTxn?) {
         val txnString = txn2String(hdr, txn)
@@ -18,7 +18,7 @@ class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient, p
                 logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
-            if (options.dryRun) {
+            if (dryRun) {
                 logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
@@ -40,4 +40,4 @@ class ZNodeCreate(override val options: ZkrOptions, override val zk: ZkClient, p
     companion object {
         val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
     }
-} //-ZNodeCreate
+} //-ZNodeTxnCreate
