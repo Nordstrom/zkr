@@ -9,20 +9,25 @@ import org.apache.zookeeper.ZooKeeper
 import org.apache.zookeeper.data.ACL
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.Closeable
 import java.io.IOException
 import java.lang.invoke.MethodHandles
+import java.net.Socket
+import java.nio.charset.Charset
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.NoSuchElementException
 
 class ZkClient(val host: String, val connect: Boolean = true) {
     var zk: ZooKeeper? = null
 
     init {
         if (!connect) {
-            logger.info("no connection to ZooKeeper for --dry-run")
+            logger.debug("no connection to ZooKeeper for --dry-run")
         } else {
             val connected = CountDownLatch(1)
-            logger.info("connecting to $host")
+            logger.debug("connecting to $host")
             zk = ZooKeeper(host, Ints.checkedCast(ZK_SESSION_TIMEOUT_MS), Watcher { event ->
                 if (event.state == Watcher.Event.KeeperState.SyncConnected) {
                     connected.countDown()
@@ -32,7 +37,7 @@ class ZkClient(val host: String, val connect: Boolean = true) {
                 if (!connected.await(ZK_SESSION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
                     throw IOException("Timeout out connecting to: $host")
                 }
-                logger.info("connected")
+                logger.debug("connected")
             } catch (e: InterruptedException) {
                 try {
                     zk!!.close()
@@ -59,7 +64,7 @@ class ZkClient(val host: String, val connect: Boolean = true) {
             logger.trace("create-znode.OK:actual=|$actual|")
         } catch (e: NodeExistsException) {
             if (overwrite) {
-                logger.info("OVERWRITE: $path")
+                logger.debug("OVERWRITE: $path")
                 setAcls(path, acls)
                 if (data != null) {
                     setData(path, data)
@@ -117,7 +122,7 @@ class ZkClient(val host: String, val connect: Boolean = true) {
 
     fun close() {
         zk?.close()
-        if (connect) logger.info("close connection to $host")
+        if (connect) logger.debug("close connection to $host")
     }
 
     private fun getParentPath(path: String): String {
@@ -129,4 +134,56 @@ class ZkClient(val host: String, val connect: Boolean = true) {
         private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
         val ZK_SESSION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(30)
     }
-}
+} //-ZkClient
+
+class ZkSocketClient(zkString: String) : Closeable {
+    val connected: Boolean
+    val socket: Socket
+
+    init {
+        val parts = zkString.split(":")
+        val host = parts[0]
+        val port = parts[1].toInt()
+        socket = Socket(host, port)
+        connected = true
+    }
+
+    val reader = Scanner(socket.getInputStream())
+    val writer = socket.getOutputStream()
+
+    fun isLeader(): Boolean {
+        var leader = false
+        if (connected) {
+            write("stat")
+            val lines = read()
+            leader = lines.filter { it.contains("Mode:") }.contains("leader")
+        }
+        return leader
+    }
+
+    fun read(): MutableList<String> {
+        val lines = mutableListOf<String>()
+        try {
+            while (connected) {
+                lines.add(reader.nextLine())
+            }
+        } catch (e: NoSuchElementException) {
+            //We don't have any more to read
+        }
+
+        return lines
+    }
+
+    fun write(message: String) {
+        if (connected) {
+            writer.write("$message\n".toByteArray(Charset.defaultCharset()))
+        }
+    }
+
+    override fun close() {
+        reader.close()
+        writer.close()
+        socket.close()
+    }
+
+} // ZkSocketClient

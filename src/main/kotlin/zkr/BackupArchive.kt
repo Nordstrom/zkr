@@ -71,9 +71,8 @@ class BackupArchiveInputStream(file: String, compress: Boolean = false, s3bucket
     private var ins: InputStream
 
     init {
-        val std = (file == "-")
         ins = if (s3bucket.isNotEmpty()) {
-            logger.info("Restoring from S3: bucket=${s3bucket}, region=${s3region}, key=$file")
+            logger.debug("Restoring from S3: bucket=${s3bucket}, region=${s3region}, key=$file")
             val region = Region.of(s3region)
             val s3 = S3Client.builder()
                     .region(region)
@@ -82,17 +81,16 @@ class BackupArchiveInputStream(file: String, compress: Boolean = false, s3bucket
                     GetObjectRequest.builder()
                             .bucket(s3bucket)
                             .key(file)
-                            // TODO parse/set versionId if '?' in file
                             .build(),
                     ResponseTransformer.toInputStream()
             )
         } else {
-            logger.info("Restoring from file: $file")
+            logger.debug("Restoring from file: $file")
             BufferedInputStream(FileInputStream(file))
         }
 
         if (compress) {
-            logger.info("Restoring compressed archive")
+            logger.debug("Restoring compressed archive")
             ins = GZIPInputStream(ins)
         }
 

@@ -4,6 +4,7 @@ package zkr
 // Code for Backup migrated to kotlin from https://github.com/boundary/zoocreeper
 //
 
+import ch.qos.logback.classic.Level
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
@@ -46,6 +47,15 @@ class Restore : Runnable {
     private var numberNodes = 0
 
     override fun run() {
+        if (options.verbose) {
+            println("v=${options.verbose}, ${Restore::class.java.getPackage().name}")
+            Zkr.logLevel(Restore::class.java.getPackage().name, Level.DEBUG)
+            logger.trace("enabled")
+            logger.debug("enabled")
+            logger.info("enabled")
+            logger.warn("enabled")
+            logger.error("enabled")
+        }
         logger.debug("options : $options")
         logger.debug("restore : $restoreOptions")
 
@@ -122,6 +132,7 @@ class Restore : Runnable {
             logger.info("Created node: ${zNode.path}")
         } catch (e: NodeExistsException) {
             if (restoreOptions.overwrite) { // TODO: Compare with current data / acls
+                logger.warn("OVERWRITE ${zNode.path}")
                 zkc.zk?.setACL(zNode.path, zNode.acls, -1)
                 zkc.zk?.setData(zNode.path, zNode.data, -1)
             } else {

@@ -1,5 +1,6 @@
 package zkr
 
+import ch.qos.logback.classic.Level
 import kotlinx.coroutines.Runnable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -33,6 +34,11 @@ class Zkr : Runnable {
             val exitCode = CommandLine(Zkr()).execute(*args)
             exitProcess(exitCode)
         } //-main
+
+        fun logLevel(packageName: String, level: Level = Level.DEBUG) {
+            val logger = LoggerFactory.getLogger(packageName) as ch.qos.logback.classic.Logger
+            logger.level = level
+        }
     } //-companion
 
     override fun run() = CommandLine(Zkr()).usage(System.out)

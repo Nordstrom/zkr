@@ -4,6 +4,7 @@ package zkr
 // Code for Backup migrated to kotlin from https://github.com/boundary/zoocreeper
 //
 
+import ch.qos.logback.classic.Level
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
@@ -12,14 +13,13 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.selects.select
 import kotlinx.serialization.UnstableDefault
-import kotlinx.serialization.json.Json
 import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.data.Stat
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.*
+import java.io.OutputStream
 import java.lang.invoke.MethodHandles
 import java.time.Duration
 import java.time.Instant
@@ -46,31 +46,27 @@ class Backup : Runnable {
     //TODO: Don't use class variable!!
     private var numberNodes = 0
 
-    val znodes = mutableListOf<BackupZNode>()
-
     @UnstableDefault
     @ObsoleteCoroutinesApi
     @InternalCoroutinesApi
     override fun run() {
-        //TODO set logging level
+        if (options.verbose) {
+            Zkr.logLevel(Restore::class.java.getPackage().name, Level.DEBUG)
+        }
         logger.debug("options : $options")
         logger.debug("backup  : $backupOptions")
 
         cancel = CliHelper.trapSignal("INT")
         runBlocking {
-            logger.info("CROSSING.THE.STREAMS")
             val jobs = mutableListOf(launch(Dispatchers.IO) { runBackup() })
 
             // Wait for cancel signal
             select<Unit> {
                 cancel.onReceive {
-                    logger.info("STREAMS.CROSSED")
                     jobs.forEach { it.cancelAndJoin() }
-                    logger.info("PROTON.PACK.OVERLOAD")
                 }
             }
         } //-runBlocking
-        logger.info("TOTAL.PROTONIC.REVERSAL")
 
         exitProcess(0)
 
@@ -82,11 +78,11 @@ class Backup : Runnable {
     suspend fun runBackup() {
         val dur = Duration.ofMinutes(backupOptions.repeatMin)
 
-        logger.info("backup     : ${options.file}")
-        logger.info("compression: ${backupOptions.compress}")
-        logger.info("excluding  : ${options.excludes}")
-        logger.info("including  : ${options.includes}")
-        logger.info("repeat     : $dur, ${dur.toMillis()} ms")
+        logger.debug("backup     : ${options.file}")
+        logger.debug("compression: ${backupOptions.compress}")
+        logger.debug("excluding  : ${options.excludes}")
+        logger.debug("including  : ${options.includes}")
+        logger.debug("repeat     : $dur, ${dur.toMillis()} ms")
 
         if (backupOptions.repeatMin > 0) {
             val ticktock = ticker(delayMillis = dur.toMillis(), initialDelayMillis = 0)
@@ -115,14 +111,22 @@ class Backup : Runnable {
 
     @UnstableDefault
     private fun doBackup() {
-        val zkc = ZkClient(host = options.host, connect = true)
-
         // Only execute backup if connector to ensemble leader
+        if (!options.notLeader) {
+            ZkSocketClient(options.host).use {
+                if (!it.isLeader()) {
+                    logger.warn("ZooKeeper '${options.host}' is not the Leader, skipping backup.")
+                    return
+                }
+            }
+        }
+
+        val zkc = ZkClient(host = options.host, connect = true)
 
         numberNodes = 0
         val t0 = Instant.now()
         val os = BackupArchiveOutputStream(name = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region)
-        logger.info("backup to  : $os.file")
+        logger.debug("backup to  : $os.file")
 
         backup(zkc, os)
 

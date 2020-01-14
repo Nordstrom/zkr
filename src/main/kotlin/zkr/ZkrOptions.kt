@@ -16,6 +16,13 @@ class ZkrOptions {
             defaultValue = "localhost:2181")
     var host: String = "localhost:2181"
 
+    @CommandLine.Option(
+            names = ["--not-leader", "-l"],
+            description = ["Perform backup/restore is not ZooKeeper ensemble leader (default: \${DEFAULT-VALUE})"],
+            defaultValue = "false"
+    )
+    var notLeader: Boolean = false
+
     //TODO regex
     @CommandLine.Option(
             names = ["--exclude", "-e"],
