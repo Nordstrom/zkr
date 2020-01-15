@@ -47,15 +47,7 @@ class Restore : Runnable {
     private var numberNodes = 0
 
     override fun run() {
-        if (options.verbose) {
-            println("v=${options.verbose}, ${Restore::class.java.getPackage().name}")
-            Zkr.logLevel(Restore::class.java.getPackage().name, Level.DEBUG)
-            logger.trace("enabled")
-            logger.debug("enabled")
-            logger.info("enabled")
-            logger.warn("enabled")
-            logger.error("enabled")
-        }
+        Zkr.logLevel(this.javaClass.`package`.name, if (options.verbose) Level.DEBUG else Level.INFO)
         logger.debug("options : $options")
         logger.debug("restore : $restoreOptions")
 
@@ -69,7 +61,7 @@ class Restore : Runnable {
     private fun restore(inputStream: InputStream?) {
         numberNodes = 0
         val t0 = Instant.now()
-        val zkc = ZkClient(host = options.host, connect = !restoreOptions.dryRun)
+        val zkc = ZkClient(host = options.host, connect = !restoreOptions.dryRun, sessionTimeoutMillis = options.sessionTimeoutMs)
         var jp: JsonParser? = null
         try {
             jp = JsonFactory().createParser(inputStream)
@@ -109,7 +101,8 @@ class Restore : Runnable {
                 logger.info("Skipping znode (not under root path '${options.path}'): ${zNode.path}")
                 continue
             }
-            if (options.shouldExclude(zNode.path)) {
+            if (!options.shouldInclude(zNode.path)) {
+                logger.debug("skip restore node: ${zNode.path}")
                 continue
             }
             for (pathComponent in path) {

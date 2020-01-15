@@ -1,5 +1,6 @@
 package zkr
 
+import ch.qos.logback.classic.Level
 import org.apache.jute.BinaryInputArchive
 import org.apache.jute.Record
 import org.apache.zookeeper.server.util.SerializeUtils
@@ -37,11 +38,11 @@ class Logs : Runnable {
     lateinit var zk: ZkClient
 
     override fun run() {
-        //TODO set logging level
+        Zkr.logLevel(this.javaClass.`package`.name, if (options.verbose) Level.DEBUG else Level.INFO)
         try {
             logger.info("excluding  : ${options.excludes}")
             if (restore.overwrite) logger.warn("overwrite  : ${restore.overwrite} !!")
-            zk = ZkClient(host = options.host, connect = !(restore.info && restore.dryRun))
+            zk = ZkClient(host = options.host, connect = !(restore.info && restore.dryRun), sessionTimeoutMillis = options.sessionTimeoutMs)
 
             val stream = BinaryInputArchiveFactory(
                     txnLog = options.file,

@@ -11,10 +11,10 @@ interface ZNodeTxn<T : Any> {
 
     fun process(hdr: TxnHeader, txn: T?)
 
-    fun shouldExclude(path: String): Boolean {
-        val excluded = options.excludes.filter { path.startsWith(it) }
-        return excluded.isNotEmpty()
-    }
+//    fun shouldExclude(path: String): Boolean {
+//        val excluded = options.excludes.filter { path.startsWith(it) }
+//        return excluded.isNotEmpty()
+//    }
 
 
     companion object {

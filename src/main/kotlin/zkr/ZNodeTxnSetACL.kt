@@ -16,7 +16,7 @@ class ZNodeTxnSetACL(override val options: ZkrOptions, override val zk: ZkClient
         s += "\n  acls = ${txn?.acl}"
 
         if (txn != null) {
-            if (shouldExclude(txn.path)) {
+            if (options.isPathExcluded(txn.path)) {
                 ZNodeTxnCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
@@ -24,7 +24,7 @@ class ZNodeTxnSetACL(override val options: ZkrOptions, override val zk: ZkClient
                 logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
-            if (options.verbose) logger.info(s)
+            logger.debug(s)
 
             zk.setAcls(txn.path, txn.acl)
             logger.info("setAcls at path=${txn.path}")

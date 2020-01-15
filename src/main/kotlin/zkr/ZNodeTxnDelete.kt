@@ -13,11 +13,11 @@ class ZNodeTxnDelete(override val options: ZkrOptions, override val zk: ZkClient
         val txnString = txn2String(hdr, txn)
         val s = "$txnString\n  path = ${txn?.path}"
         if (txn != null) {
-            if (shouldExclude(txn.path)) {
+            if (options.isPathExcluded(txn.path)) {
                 ZNodeTxnCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
-            if (options.verbose) logger.info(s)
+            logger.debug(s)
 
             if (dryRun) {
                 logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")

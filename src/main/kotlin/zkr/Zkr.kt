@@ -11,7 +11,7 @@ import kotlin.system.exitProcess
 
 @CommandLine.Command(
         name = "zkr",
-        description = ["ZooKeeper Reaper - ZooKeeper backup/restore utility"],
+        header = ["ZooKeeper Reaper v$VERSION - ZooKeeper backup/restore utility"],
         mixinStandardHelpOptions = true,
         version = [VERSION],
         subcommands = [
@@ -20,13 +20,12 @@ import kotlin.system.exitProcess
             Logs::class,
             Restore::class
         ],
-        usageHelpWidth = 120,
-        footer = ["v$VERSION"]
+        usageHelpWidth = 120
 )
 class Zkr : Runnable {
 
     companion object {
-        const val VERSION = "0.2α"
+        const val VERSION = "0.3"
         private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
         @JvmStatic

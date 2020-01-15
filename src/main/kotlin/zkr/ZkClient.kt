@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.NoSuchElementException
 
-class ZkClient(val host: String, val connect: Boolean = true) {
+class ZkClient(val host: String, val connect: Boolean = true, sessionTimeoutMillis: Long = 30000) {
     var zk: ZooKeeper? = null
 
     init {
@@ -28,13 +28,13 @@ class ZkClient(val host: String, val connect: Boolean = true) {
         } else {
             val connected = CountDownLatch(1)
             logger.debug("connecting to $host")
-            zk = ZooKeeper(host, Ints.checkedCast(ZK_SESSION_TIMEOUT_MS), Watcher { event ->
+            zk = ZooKeeper(host, Ints.checkedCast(sessionTimeoutMillis), Watcher { event ->
                 if (event.state == Watcher.Event.KeeperState.SyncConnected) {
                     connected.countDown()
                 }
             })
             try {
-                if (!connected.await(ZK_SESSION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                if (!connected.await(sessionTimeoutMillis, TimeUnit.MILLISECONDS)) {
                     throw IOException("Timeout out connecting to: $host")
                 }
                 logger.debug("connected")
@@ -132,7 +132,6 @@ class ZkClient(val host: String, val connect: Boolean = true) {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
-        val ZK_SESSION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(30)
     }
 } //-ZkClient
 

@@ -11,14 +11,18 @@ class BackupOptions {
     var compress: Boolean = false
 
     @CommandLine.Option(
-            names = ["--ephemeral", "-eph"],
+            names = ["--ephemeral", "-f"],
             description = ["Backup ephemeral znodes (default: \${DEFAULT-VALUE})"],
             defaultValue = "false"
     )
     var ephemeral: Boolean = false
 
-    //TODO maxRetries (5)
-    var maxRetries = 5
+    @CommandLine.Option(
+            names = ["--max-retries", "-m"],
+            description = ["Maximum number of retries to read consistent data (default: \${DEFAULT-VALUE})"],
+            defaultValue = "5"
+    )
+    var maxRetries: Long = 5
 
     @CommandLine.Option(
             names = ["--pretty"],

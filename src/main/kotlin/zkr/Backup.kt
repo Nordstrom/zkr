@@ -50,9 +50,7 @@ class Backup : Runnable {
     @ObsoleteCoroutinesApi
     @InternalCoroutinesApi
     override fun run() {
-        if (options.verbose) {
-            Zkr.logLevel(Restore::class.java.getPackage().name, Level.DEBUG)
-        }
+        Zkr.logLevel(this.javaClass.`package`.name, if (options.verbose) Level.DEBUG else Level.INFO)
         logger.debug("options : $options")
         logger.debug("backup  : $backupOptions")
 
@@ -121,7 +119,7 @@ class Backup : Runnable {
             }
         }
 
-        val zkc = ZkClient(host = options.host, connect = true)
+        val zkc = ZkClient(host = options.host, connect = true, sessionTimeoutMillis = options.sessionTimeoutMs)
 
         numberNodes = 0
         val t0 = Instant.now()
@@ -161,14 +159,16 @@ class Backup : Runnable {
             val zk = zkc.zk
             val stat = Stat()
             if (stat.ephemeralOwner != 0L && !backupOptions.ephemeral) {
-                logger.debug("Skipping ephemeral node: $path")
+                logger.debug("skip ephemeral node: $path")
                 return
             }
             //TODO ZkClient.getAcls()
             var acls: List<ACL> = nullToEmpty(zk!!.getACL(path, stat))
             val dataStat = Stat()
+            //TODO ZkClient.getData()
             var data = zk.getData(path, false, dataStat)
             var i = 0
+            //TODO ZkClient?
             while (stat.compareTo(dataStat) != 0 && i < backupOptions.maxRetries) {
                 logger.warn("Retrying getACL / getData to read consistent state")
                 acls = zk.getACL(path, stat)
@@ -176,16 +176,18 @@ class Backup : Runnable {
                 i++
             }
             check(stat.compareTo(dataStat) == 0) { "Unable to read consistent data for znode: $path" }
-            logger.debug("Backing up node: $path")
-            dumpNode(jgen, path, stat, acls, data)
-            numberNodes++
+            if (options.shouldInclude(path)) {
+                logger.debug("backup node: $path")
+                dumpNode(jgen, path, stat, acls, data)
+                numberNodes++
+            } else {
+                logger.debug("skip backup node: $path")
+            }
             val childPaths: MutableList<String> = nullToEmpty(zk.getChildren(path, false, null))
             childPaths.sort()
             for (childPath in childPaths) {
-                val fullChildPath: String = createFullPath(path, childPath)
-                if (!options.shouldExclude(fullChildPath) && options.shouldInclude(fullChildPath)) {
-                    doBackup(zkc, jgen, fullChildPath)
-                }
+                val fullChildPath = createFullPath(path, childPath)
+                doBackup(zkc, jgen, fullChildPath)
             }
         } catch (e: KeeperException.NoNodeException) {
             logger.warn("Node disappeared during backup: path=$path")
@@ -196,7 +198,7 @@ class Backup : Runnable {
 
     private fun dumpNode(jgen: JsonGenerator?, path: String?, stat: Stat, acls: List<ACL>, data: ByteArray?) {
         if (data != null && path != null) {
-            logger.debug(".dump-node\npath=$path\ndata_s=${String(data)}\ndata_a=${Arrays.toString(data)}")
+            logger.debug("dump-node\npath=$path\ndata_s=${String(data)}\ndata_a=${Arrays.toString(data)}")
         }
         jgen!!.writeObjectFieldStart(path)
         // The number of changes to the ACL of this znode.
@@ -239,7 +241,7 @@ class Backup : Runnable {
         jgen.writeEndObject()
     }
 
-    fun createFullPath(path: String, childPath: String): String {
+    private fun createFullPath(path: String, childPath: String): String {
         return if (path.endsWith("/")) {
             path + childPath
         } else {
@@ -247,19 +249,17 @@ class Backup : Runnable {
         }
     }
 
-    fun <T> nullToEmpty(original: List<T>?): MutableList<T> {
+    private fun <T> nullToEmpty(original: List<T>?): MutableList<T> {
         return original as MutableList<T>? ?: mutableListOf()
     }
 
-
-    //TODO file size
     private fun summary(file: String, numberNodes: Int, start: Instant): String = """
 
   ,-----------.  
 (_\  ZooKeeper \ file    : ${if (options.s3bucket.isNotEmpty()) "s3://${options.s3bucket}/" else ""}$file
-   | Reaper    | bytes   : TBD
-   | Summary   | znodes  : $numberNodes
-  _|           | duration: ${Duration.between(start, Instant.now())}
+   | Reaper    | znodes  : $numberNodes
+   | Summary   | duration: ${Duration.between(start, Instant.now())}
+  _|           |
  (_/_____(*)___/
           \\
            ))

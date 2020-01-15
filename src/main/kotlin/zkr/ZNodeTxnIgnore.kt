@@ -11,7 +11,7 @@ class ZNodeTxnIgnore(override val options: ZkrOptions, override val zk: ZkClient
 
     override fun process(hdr: TxnHeader, txn: Record?) {
         val txnString = txn2String(hdr, txn)
-        if (options.verbose) logger.info(txnString)
+        logger.debug(txnString)
     }
 
     companion object {
