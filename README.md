@@ -1,10 +1,10 @@
 # zkr - ZooKeeper Reaper
 
-Utility to view and restore ZooKeeper transactions from transaction log or Exhibitor backup files
+Utility to backup/restore ZooKeeper znodes or view and restore ZooKeeper transactions from transaction log/Exhibitor backup files.
 
 ## Background
 
-This project provides a command-line utility that can be used to backup and restore ZooKeeper znodes in JSON, or compress to a file or S3.
+This project provides a command-line utility that can be used to backup and restore ZooKeeper znodes in JSON, optionally compressed, and write to a file or S3.
 
 The `logs` command can replay transactions from Exhibitor transaction log and backup archive (gzip'd) logs. The `logs` command ignores ephemeral znodes.
 
@@ -162,3 +162,7 @@ but must be done in a specific order:
 - Run `zkr` with `--overwrite-existing` option.
 - start brokers, et al
 
+
+# ATTRIBUTIONS
+ - ZooKeeper transaction and Exhibitor backup view/restore is based on ZooKeeper [LogFormatter](https://github.com/apache/zookeeper/blob/master/zookeeper-server/src/main/java/org/apache/zookeeper/server/LogFormatter.java)
+ - Backup/Restore is based on [zoocreeper](https://github.com/boundary/zoocreeper)
