@@ -37,14 +37,14 @@ class ZkrOptions {
 
     @CommandLine.Option(
             names = ["--exclude", "-e"],
-            description = ["Comma-delimited list of paths to exclude (can be regex)"],
+            description = ["Comma-delimited list of paths to exclude (regex)"],
             split = ","
     )
     var excludes: List<Pattern> = mutableListOf()
 
     @CommandLine.Option(
             names = ["--include", "-i"],
-            description = ["Comma-delimited list of paths to include (can be regex)"],
+            description = ["Comma-delimited list of paths to include (regex)"],
             split = ","
     )
     var includes: List<Pattern> = mutableListOf()

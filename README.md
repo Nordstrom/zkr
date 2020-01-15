@@ -10,9 +10,9 @@ The `logs` command can replay transactions from Exhibitor transaction log and ba
 
 ## Usage
 
-`./zkr help`
 
-```shell script
+### Commands
+```
 ZooKeeper Reaper v0.3 - ZooKeeper backup/restore utility
 Usage: zkr [-hV] [COMMAND]
   -h, --help      Show this help message and exit.
@@ -24,9 +24,8 @@ Commands:
   restore  Restore ZooKeeper znodes from backup
 ```
 
-`./zkr backup help`
-
-```shell script
+### Backup Command
+```
 Usage: zkr backup [-cflv] [--pretty] [-m=<maxRetries>] [-p=<path>] [-r=<repeatMin>] [-s=<sessionTimeoutMs>]
                   [--s3-bucket=<s3bucket>] [--s3-region=<s3region>] [-z=<host>] [-e=<excludes>[,<excludes>...]]...
                   [-i=<includes>[,<includes>...]]... <file> [COMMAND]
@@ -34,10 +33,10 @@ Backup ZooKeeper znodes
       <file>               Transaction log or backup file
   -c, --compress           Compress output (default: false)
   -e, --exclude=<excludes>[,<excludes>...]
-                           Comma-delimited list of paths to exclude (can be regex)
+                           Comma-delimited list of paths to exclude (regex)
   -f, --ephemeral          Backup ephemeral znodes (default: false)
   -i, --include=<includes>[,<includes>...]
-                           Comma-delimited list of paths to include (can be regex)
+                           Comma-delimited list of paths to include (regex)
   -l, --not-leader         Perform backup/restore even if not ZooKeeper ensemble leader (default: false)
   -m, --max-retries=<maxRetries>
                            Maximum number of retries to read consistent data (default: 5)
@@ -57,9 +56,11 @@ Commands:
   help  Displays help information about the specified command
 ```
 
-`./zkr restore help`
+By default, backup will only execute if `--zookeeper` is the `leader` of an ensemble.  To backup either a `follower` or `standalone`, specify `--not-leader`
 
-```shell script
+
+### Restore Command
+```
 Usage: zkr restore [-cdlov] [--info] [-p=<path>] [-s=<sessionTimeoutMs>] [--s3-bucket=<s3bucket>]
                    [--s3-region=<s3region>] [-z=<host>] [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,
                    <includes>...]]... <file> [COMMAND]
@@ -68,9 +69,9 @@ Restore ZooKeeper znodes from backup
   -c, --compress             Compressed input (default: false)
   -d, --dry-run              Do not actually perform the actions (default: false)
   -e, --exclude=<excludes>[,<excludes>...]
-                             Comma-delimited list of paths to exclude (can be regex)
+                             Comma-delimited list of paths to exclude (regex)
   -i, --include=<includes>[,<includes>...]
-                             Comma-delimited list of paths to include (can be regex)
+                             Comma-delimited list of paths to include (regex)
       --info                 Print information about transaction log or backup then exit  (default: false)
   -l, --not-leader           Perform backup/restore even if not ZooKeeper ensemble leader (default: false)
   -o, --overwrite-existing   Overwrite existing znodes (default: false)
@@ -85,9 +86,8 @@ Commands:
   help  Displays help information about the specified command
 ```
 
-`./zkr logs help`
-
-```shell script
+### Logs Command
+```
 Usage: zkr logs [-cdlov] [--info] [-p=<path>] [-s=<sessionTimeoutMs>] [--s3-bucket=<s3bucket>] [--s3-region=<s3region>]
                 [-z=<host>] [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,<includes>...]]... <file> [COMMAND]
 View/write ZooKeeper/Exhibitor transaction logs and backups
@@ -95,9 +95,9 @@ View/write ZooKeeper/Exhibitor transaction logs and backups
   -c, --compress             Compressed input (default: false)
   -d, --dry-run              Do not actually perform the actions (default: false)
   -e, --exclude=<excludes>[,<excludes>...]
-                             Comma-delimited list of paths to exclude (can be regex)
+                             Comma-delimited list of paths to exclude (regex)
   -i, --include=<includes>[,<includes>...]
-                             Comma-delimited list of paths to include (can be regex)
+                             Comma-delimited list of paths to include (regex)
       --info                 Print information about transaction log or backup then exit  (default: false)
   -l, --not-leader           Perform backup/restore even if not ZooKeeper ensemble leader (default: false)
   -o, --overwrite-existing   Overwrite existing znodes (default: false)
@@ -134,7 +134,7 @@ The only required options is `-z`/`--zookeeper` which is a standard ZooKeeper co
 
 Create a `jaas.conf` file with appropriate values. For example:
 
-```shell script
+```
 Server {
   org.apache.zookeeper.server.auth.DigestLoginModule required
   user_admin="developer"
