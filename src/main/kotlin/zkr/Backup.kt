@@ -112,8 +112,8 @@ class Backup : Runnable {
         // Only execute backup if connector to ensemble leader
         if (!options.notLeader) {
             ZkSocketClient(options.host).use {
-                if (!it.isLeader()) {
-                    logger.warn("ZooKeeper '${options.host}' is not the Leader, skipping backup.")
+                if (!it.isLeaderOrStandalone()) {
+                    logger.warn("ZooKeeper '${options.host}' is not the 'leader' or 'stand-alone', skipping backup.")
                     return
                 }
             }
@@ -123,12 +123,12 @@ class Backup : Runnable {
 
         numberNodes = 0
         val t0 = Instant.now()
-        val os = BackupArchiveOutputStream(name = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region)
-        logger.debug("backup to  : $os.file")
+        val os = BackupArchiveOutputStream(path = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region)
+        logger.debug("backup to  : ${os.filename}")
 
         backup(zkc, os)
 
-        logger.info("Summary ${summary(os.file, numberNodes, t0)}")
+        logger.info("Summary ${summary(os.filename, numberNodes, t0)}")
     }
 
     @UnstableDefault
@@ -158,12 +158,12 @@ class Backup : Runnable {
         try {
             val zk = zkc.zk
             val stat = Stat()
+            //TODO ZkClient.getAcls() ??
+            var acls: List<ACL> = nullToEmpty(zk!!.getACL(path, stat))
             if (stat.ephemeralOwner != 0L && !backupOptions.ephemeral) {
                 logger.debug("skip ephemeral node: $path")
                 return
             }
-            //TODO ZkClient.getAcls()
-            var acls: List<ACL> = nullToEmpty(zk!!.getACL(path, stat))
             val dataStat = Stat()
             //TODO ZkClient.getData()
             var data = zk.getData(path, false, dataStat)

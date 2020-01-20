@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 import zkr.ZNodeTxn.Companion.txn2String
 import java.lang.invoke.MethodHandles
 
-class ZNodeTxnSetData(override val options: ZkrOptions, override val zk: ZkClient, private val dryRun: Boolean = false) : ZNodeTxn<SetDataTxn> {
+class ZNodeTxnSetData(override val options: ZkrOptions, override val zk: ZkClient, private val restore: Boolean = false) : ZNodeTxn<SetDataTxn> {
 
     override fun process(hdr: TxnHeader, txn: SetDataTxn?) {
         val txnString = txn2String(hdr, txn)
@@ -22,7 +22,7 @@ class ZNodeTxnSetData(override val options: ZkrOptions, override val zk: ZkClien
                 ZNodeTxnCreate.logger.info("EXCLUDE: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
-            if (dryRun) {
+            if (!restore) {
                 logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }

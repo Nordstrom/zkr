@@ -18,15 +18,24 @@ import java.time.format.DateTimeFormatter
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-class BackupArchiveOutputStream(val name: String, val compress: Boolean = false, val s3bucket: String = "", val s3region: String = "") : OutputStream() {
+class BackupArchiveOutputStream(val path: String, val compress: Boolean = false, val s3bucket: String = "", val s3region: String = "") : OutputStream() {
     private val os = ByteArrayOutputStream()
-    var file: String
+    var filepath: String = ""
+    var filebase: String = path
+    var filename: String
 
     init {
         val t0 = Instant.now()
         val timestamp = DATE_FORMATTER.format(t0)
         val suffix = if (compress) "gz" else "json"
-        file = "${name}-$timestamp.$suffix"
+        val regex = """(.+)/(.+)""".toRegex()
+        val matchResult = regex.matchEntire(path)
+        if (matchResult != null) {
+            val (fp, fn) = matchResult.destructured
+            filepath = if (fp.isNotEmpty()) "$fp/" else ""
+            filebase = fn
+        }
+        filename = "$filepath${filebase}-$timestamp.$suffix"
     }
 
     override fun write(b: Int) {
@@ -36,16 +45,21 @@ class BackupArchiveOutputStream(val name: String, val compress: Boolean = false,
     override fun close() {
         os.close()
 
-        var out: OutputStream = FileOutputStream(file)
+        // If contains path(s), create them first
+        if (filepath.isNotEmpty()) {
+            File(filepath).mkdirs()
+        }
+        var out: OutputStream = FileOutputStream(filename)
         if (compress) {
             out = GZIPOutputStream(out)
         }
         out.write(os.toByteArray())
         out.close()
 
-        // For S3, we must write to local file, then upload since api does not support OutputStream
+        // For S3, we must write to local file, then upload
         if (s3bucket.isNotEmpty()) {
-            val path = Paths.get(file)
+            //TODO if S3, create in temporary directory since we are going to delete it anyway
+            val path = Paths.get(filename)
             val region = Region.of(s3region)
             val s3 = S3Client.builder()
                     .region(region)
@@ -53,11 +67,11 @@ class BackupArchiveOutputStream(val name: String, val compress: Boolean = false,
             s3.putObject(
                     PutObjectRequest.builder()
                             .bucket(s3bucket)
-                            .key(file)
+                            .key(filename)
                             .build(),
                     RequestBody.fromFile(path)
             )
-            Files.delete(Paths.get(file))
+            Files.delete(Paths.get(filename))
         }
     }
 

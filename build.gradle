@@ -77,7 +77,8 @@ dependencies {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
-        jvmTarget = "11"
+        //TODO use jvmTarget = "11", but must use docker image openjdk11-slim for container.
+        jvmTarget = "1.8"
     }
 }
 

@@ -33,7 +33,7 @@ class Logs : Runnable {
     lateinit var options: ZkrOptions
 
     @CommandLine.Mixin
-    lateinit var restore: RestoreOptions
+    lateinit var restore: LogsOptions
 
     lateinit var zk: ZkClient
 
@@ -42,7 +42,7 @@ class Logs : Runnable {
         try {
             logger.info("excluding  : ${options.excludes}")
             if (restore.overwrite) logger.warn("overwrite  : ${restore.overwrite} !!")
-            zk = ZkClient(host = options.host, connect = !(restore.info && restore.dryRun), sessionTimeoutMillis = options.sessionTimeoutMs)
+            zk = ZkClient(host = options.host, connect = !(restore.info && restore.restore), sessionTimeoutMillis = options.sessionTimeoutMs)
 
             val stream = BinaryInputArchiveFactory(
                     txnLog = options.file,
@@ -108,18 +108,18 @@ class Logs : Runnable {
         when (txn) {
             //exhibitor: Create-Persistent
             is CreateTxn -> {
-                ZNodeTxnCreate(zk = zk, options = options, overwrite = restore.overwrite, dryRun = restore.dryRun).process(hdr, txn)
+                ZNodeTxnCreate(zk = zk, options = options, overwrite = restore.overwrite, restore = restore.restore).process(hdr, txn)
             }
             //exhibitor: Delete
             is DeleteTxn -> {
-                ZNodeTxnDelete(zk = zk, options = options, dryRun = restore.dryRun).process(hdr, txn)
+                ZNodeTxnDelete(zk = zk, options = options, restore = restore.restore).process(hdr, txn)
             }
             //exhibitor: SetData
             is SetDataTxn -> {
-                ZNodeTxnSetData(zk = zk, options = options, dryRun = restore.dryRun).process(hdr, txn)
+                ZNodeTxnSetData(zk = zk, options = options, restore = restore.restore).process(hdr, txn)
             }
             is SetACLTxn -> {
-                ZNodeTxnSetACL(zk = zk, options = options, dryRun = restore.dryRun).process(hdr, txn)
+                ZNodeTxnSetACL(zk = zk, options = options, restore = restore.restore).process(hdr, txn)
             }
             is MultiTxn -> {
                 txn.txns.forEach {

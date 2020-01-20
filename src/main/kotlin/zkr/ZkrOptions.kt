@@ -30,7 +30,7 @@ class ZkrOptions {
 
     @CommandLine.Option(
             names = ["--not-leader", "-l"],
-            description = ["Perform backup/restore even if not ZooKeeper ensemble leader (default: \${DEFAULT-VALUE})"],
+            description = ["Perform backup/restore even if ZooKeeper is not ensemble leader or standalone (i.e., follower) (default: \${DEFAULT-VALUE})"],
             defaultValue = "false"
     )
     var notLeader: Boolean = false

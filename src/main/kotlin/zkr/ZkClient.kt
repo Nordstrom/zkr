@@ -143,19 +143,22 @@ class ZkSocketClient(zkString: String) : Closeable {
         val parts = zkString.split(":")
         val host = parts[0]
         val port = parts[1].toInt()
+        logger.debug("zk-socket connecting to $host:$port")
         socket = Socket(host, port)
         connected = true
+        logger.debug("zk-socket $connected")
     }
 
     val reader = Scanner(socket.getInputStream())
     val writer = socket.getOutputStream()
 
-    fun isLeader(): Boolean {
+    fun isLeaderOrStandalone(): Boolean {
         var leader = false
         if (connected) {
             write("stat")
             val lines = read()
-            leader = lines.filter { it.contains("Mode:") }.contains("leader")
+            val mode = lines.filter { it.contains("Mode:") }
+            leader = mode.any { it.contains("standalone", ignoreCase = true) || it.contains("leader", ignoreCase = true) }
         }
         return leader
     }
@@ -185,4 +188,7 @@ class ZkSocketClient(zkString: String) : Closeable {
         socket.close()
     }
 
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
+    }
 } // ZkSocketClient

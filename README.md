@@ -86,22 +86,25 @@ Commands:
   help  Displays help information about the specified command
 ```
 
+Use `--dry-run` to see what would be restored without actually writing the znodes.
+
+
 ### Logs Command
 ```
-Usage: zkr logs [-cdlov] [--info] [-p=<path>] [-s=<sessionTimeoutMs>] [--s3-bucket=<s3bucket>] [--s3-region=<s3region>]
+Usage: zkr logs [-lorv] [--info] [-p=<path>] [-s=<sessionTimeoutMs>] [--s3-bucket=<s3bucket>] [--s3-region=<s3region>]
                 [-z=<host>] [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,<includes>...]]... <file> [COMMAND]
 View/write ZooKeeper/Exhibitor transaction logs and backups
       <file>                 Transaction log or backup file
-  -c, --compress             Compressed input (default: false)
-  -d, --dry-run              Do not actually perform the actions (default: false)
   -e, --exclude=<excludes>[,<excludes>...]
                              Comma-delimited list of paths to exclude (regex)
   -i, --include=<includes>[,<includes>...]
                              Comma-delimited list of paths to include (regex)
       --info                 Print information about transaction log or backup then exit  (default: false)
-  -l, --not-leader           Perform backup/restore even if not ZooKeeper ensemble leader (default: false)
+  -l, --not-leader           Perform backup/restore even if ZooKeeper is not ensemble leader or standalone (i.e.,
+                               follower) (default: false)
   -o, --overwrite-existing   Overwrite existing znodes (default: false)
   -p, --path=<path>          ZooKeeper root path for backup/restore (default: /)
+  -r, --restore              Execute (restore) transactions (default: false)
   -s, --session-timeout-ms=<sessionTimeoutMs>
                              ZooKeeper session timeout in milliseconds (default: 30000)
       --s3-bucket=<s3bucket> S3 bucket containing Exhibitor transaction logs/backups or zkr backup files
@@ -111,6 +114,8 @@ View/write ZooKeeper/Exhibitor transaction logs and backups
 Commands:
   help  Displays help information about the specified command
 ```
+
+By default, the `logs` command will only display the log transactions.  Use `--restore` to actually write or overwrite znodes.
 
 
 ## Build
@@ -153,16 +158,26 @@ Invoke `zkr` thusly:
 
 Or use the `zkr` script in the root directory.
 
-## Restoring Kafka
+## Backup/restore Kafka
 
-This tool can restore topics and acls in a Kafka cluster from the Exhibitor transaction log/backup or a backup file
-but must be done in a specific order:
+### Backup
+This tool can backup topics and acls in a Kafka cluster from either the Exhibitor transaction log/backup files.
+It is very important to NOT backup broker ephemeral nodes:
+- /kafka/controller
+- /kafka/brokers/ids/
+
+This is done by default as `--ephemeral` is `false` by default
+
+### Restore
+Restoring can be done using Exhibitor/ZooKeeper transaction logs or backup files or a `zkr` backup file but must be done in a specific order:
 
 - start Exhibitor/ZooKeeper (ONLY) with backups `disabled` (so you don't accidentally overwrite your backup files)
-- Run `zkr` with `--overwrite-existing` option.
+- Run `zkr` with `--overwrite-existing` option
 - start brokers, et al
 
 
-# ATTRIBUTIONS
+## ATTRIBUTIONS
+This utility borrowed heavily from:
+
  - ZooKeeper transaction and Exhibitor backup view/restore is based on ZooKeeper [LogFormatter](https://github.com/apache/zookeeper/blob/master/zookeeper-server/src/main/java/org/apache/zookeeper/server/LogFormatter.java)
  - Backup/Restore is based on [zoocreeper](https://github.com/boundary/zoocreeper)

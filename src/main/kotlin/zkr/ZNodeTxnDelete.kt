@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 import zkr.ZNodeTxn.Companion.txn2String
 import java.lang.invoke.MethodHandles
 
-class ZNodeTxnDelete(override val options: ZkrOptions, override val zk: ZkClient, private val dryRun: Boolean = false) : ZNodeTxn<DeleteTxn> {
+class ZNodeTxnDelete(override val options: ZkrOptions, override val zk: ZkClient, private val restore: Boolean = false) : ZNodeTxn<DeleteTxn> {
 
     override fun process(hdr: TxnHeader, txn: DeleteTxn?) {
         val txnString = txn2String(hdr, txn)
@@ -19,7 +19,7 @@ class ZNodeTxnDelete(override val options: ZkrOptions, override val zk: ZkClient
             }
             logger.debug(s)
 
-            if (dryRun) {
+            if (!restore) {
                 logger.info("PRETEND: txn=${txn.javaClass.simpleName}, path=${txn.path}")
                 return
             }
