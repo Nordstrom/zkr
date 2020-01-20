@@ -56,7 +56,7 @@ Commands:
   help  Displays help information about the specified command
 ```
 
-By default, backup will only execute if `--zookeeper` is the `leader` of an ensemble.  To backup either a `follower` or `standalone`, specify `--not-leader`
+By default, backup will only execute if `--zookeeper` is the `leader` of an ensemble or 'standalone'.  To backup a `follower` specify `--not-leader`.
 
 
 ### Restore Command
@@ -86,6 +86,7 @@ Commands:
   help  Displays help information about the specified command
 ```
 
+By default, restore will only execute if `--zookeeper` is the `leader` of an ensemble or 'standalone'.  To restore to a `follower` specify `--not-leader`.
 Use `--dry-run` to see what would be restored without actually writing the znodes.
 
 

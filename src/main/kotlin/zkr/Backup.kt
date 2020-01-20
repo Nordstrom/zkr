@@ -115,6 +115,8 @@ class Backup : Runnable {
                 if (!it.isLeaderOrStandalone()) {
                     logger.warn("ZooKeeper '${options.host}' is not the 'leader' or 'stand-alone', skipping backup.")
                     return
+                } else {
+                    logger.debug("ZooKeeper '${options.host}' is leader or standalone")
                 }
             }
         }
@@ -123,7 +125,7 @@ class Backup : Runnable {
 
         numberNodes = 0
         val t0 = Instant.now()
-        val os = BackupArchiveOutputStream(path = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region)
+        val os = BackupArchiveOutputStream(path = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region, dryRun = backupOptions.dryRun)
         logger.debug("backup to  : ${os.filename}")
 
         backup(zkc, os)
@@ -178,7 +180,7 @@ class Backup : Runnable {
             check(stat.compareTo(dataStat) == 0) { "Unable to read consistent data for znode: $path" }
             if (options.shouldInclude(path)) {
                 logger.debug("backup node: $path")
-                dumpNode(jgen, path, stat, acls, data)
+                if (!backupOptions.dryRun ) dumpNode(jgen, path, stat, acls, data)
                 numberNodes++
             } else {
                 logger.debug("skip backup node: $path")
@@ -259,8 +261,8 @@ class Backup : Runnable {
 (_\  ZooKeeper \ file    : ${if (options.s3bucket.isNotEmpty()) "s3://${options.s3bucket}/" else ""}$file
    | Reaper    | znodes  : $numberNodes
    | Summary   | duration: ${Duration.between(start, Instant.now())}
-  _|           |
- (_/_____(*)___/
+  _|           | includes: ${options.includes}
+ (_/_____(*)___/ excludes: ${options.excludes}
           \\
            ))
            ^

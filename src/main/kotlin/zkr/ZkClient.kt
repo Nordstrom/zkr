@@ -135,7 +135,7 @@ class ZkClient(val host: String, val connect: Boolean = true, sessionTimeoutMill
     }
 } //-ZkClient
 
-class ZkSocketClient(zkString: String) : Closeable {
+class ZkSocketClient(val zkString: String) : Closeable {
     val connected: Boolean
     val socket: Socket
 
@@ -159,6 +159,7 @@ class ZkSocketClient(zkString: String) : Closeable {
             val lines = read()
             val mode = lines.filter { it.contains("Mode:") }
             leader = mode.any { it.contains("standalone", ignoreCase = true) || it.contains("leader", ignoreCase = true) }
+            logger.debug("$zkString: mode=$mode, is-leader=$leader")
         }
         return leader
     }

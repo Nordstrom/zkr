@@ -11,6 +11,13 @@ class BackupOptions {
     var compress: Boolean = false
 
     @CommandLine.Option(
+            names = ["--dry-run", "-d"],
+            description = ["Do not actually perform the actions (default: \${DEFAULT-VALUE})"],
+            defaultValue = "false"
+    )
+    var dryRun: Boolean = false
+
+    @CommandLine.Option(
             names = ["--ephemeral", "-f"],
             description = ["Backup ephemeral znodes (default: \${DEFAULT-VALUE})"],
             defaultValue = "false"
@@ -39,7 +46,7 @@ class BackupOptions {
 
     override fun toString(): String {
         return """
-compress=$compress, ephemeral=$ephemeral, repeat-min=$repeatMin, pretty=$pretty 
+compress=$compress, ephemeral=$ephemeral, repeat-min=$repeatMin, pretty=$pretty, dry-run=$dryRun 
         """.trimIndent()
     }
 

@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-class BackupArchiveOutputStream(val path: String, val compress: Boolean = false, val s3bucket: String = "", val s3region: String = "") : OutputStream() {
+class BackupArchiveOutputStream(val path: String, val compress: Boolean = false, val s3bucket: String = "", val s3region: String = "", val dryRun: Boolean = false) : OutputStream() {
     private val os = ByteArrayOutputStream()
     var filepath: String = ""
     var filebase: String = path
@@ -44,6 +44,7 @@ class BackupArchiveOutputStream(val path: String, val compress: Boolean = false,
 
     override fun close() {
         os.close()
+        if (dryRun) return
 
         // If contains path(s), create them first
         if (filepath.isNotEmpty()) {

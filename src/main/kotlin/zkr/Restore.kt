@@ -59,9 +59,22 @@ class Restore : Runnable {
     }
 
     private fun restore(inputStream: InputStream?) {
+        // Only execute backup if connector to ensemble leader
+        if (!options.notLeader) {
+            ZkSocketClient(options.host).use {
+                if (!it.isLeaderOrStandalone()) {
+                    logger.warn("ZooKeeper '${options.host}' is not the 'leader' or 'stand-alone', skipping backup.")
+                    return
+                } else {
+                    logger.debug("ZooKeeper '${options.host}' is leader or standalone")
+                }
+            }
+        }
+
+        val zkc = ZkClient(host = options.host, connect = !restoreOptions.dryRun, sessionTimeoutMillis = options.sessionTimeoutMs)
+
         numberNodes = 0
         val t0 = Instant.now()
-        val zkc = ZkClient(host = options.host, connect = !restoreOptions.dryRun, sessionTimeoutMillis = options.sessionTimeoutMs)
         var jp: JsonParser? = null
         try {
             jp = JsonFactory().createParser(inputStream)

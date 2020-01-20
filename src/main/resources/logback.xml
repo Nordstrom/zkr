@@ -8,6 +8,7 @@
     </appender>
 
     <logger name="org.apache.zookeeper" level="WARN"/>
+    <logger name="org.apache.http.client.protocol.RequestAddCookies" level="WARN"/>
 
     <root level="INFO">
         <appender-ref ref="STDERR"/>
