@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+
+# Set CLIENT_JVMFLAGS to something like this:
+#export CLIENT_JVMFLAGS="-Djava.security.auth.login.config=/var/private/jaas.conf"
+
 JAVA_BIN=`which java`
 if [ -z "$ZKR_PATH" ]; then
     ZKR_BASEDIR=`dirname "$0"`
