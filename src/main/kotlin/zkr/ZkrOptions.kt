@@ -22,13 +22,6 @@ class ZkrOptions {
     var host: String = "localhost:2181"
 
     @CommandLine.Option(
-            names = ["--superdigest"],
-            description = ["ZooKeeper superdigest password"],
-            defaultValue = ""
-    )
-    var superdigest: String = ""
-
-    @CommandLine.Option(
             names = ["--session-timeout-ms", "-s"],
             description = ["ZooKeeper session timeout in milliseconds (default: \${DEFAULT-VALUE})"],
             defaultValue = "30000"

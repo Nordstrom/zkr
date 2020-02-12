@@ -136,7 +136,9 @@ To see the available options, run:
 The only required options is `-z`/`--zookeeper` which is a standard ZooKeeper connection string (e.g., localhost:2181)
 
 
-### ZooKeeper Security via `jaas.conf`
+### ZooKeeper Security
+ 
+#### via `jaas.conf`
 
 Create a `jaas.conf` file with appropriate values. For example:
 
@@ -158,6 +160,12 @@ Invoke `zkr` thusly:
 `java -Djava.security.auth.login.config=./jaas.conf -cp build/libs/zkr-all.jar zkr.Zkr <command> <options>`
 
 Or use the `zkr` script in the root directory.
+
+#### `superdigest` support
+
+It may be necessary to add `superdigest` authorization to access restricted znodes (e.g., `/kafka/config/users`)
+
+This is supported by specifying the `superdigest` password in the environment variable `SUPERDIGEST_PASSWORD`
 
 ## Backup/restore Kafka
 

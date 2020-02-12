@@ -74,8 +74,7 @@ class Restore : Runnable {
         val zkc = ZkClient(
                 host = options.host,
                 connect = !restoreOptions.dryRun,
-                sessionTimeoutMillis = options.sessionTimeoutMs,
-                superdigest = options.superdigest
+                sessionTimeoutMillis = options.sessionTimeoutMs
         )
 
         numberNodes = 0

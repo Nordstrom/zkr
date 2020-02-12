@@ -45,8 +45,7 @@ class Logs : Runnable {
             zk = ZkClient(
                     host = options.host,
                     connect = !(restore.info && restore.restore),
-                    sessionTimeoutMillis = options.sessionTimeoutMs,
-                    superdigest = options.superdigest
+                    sessionTimeoutMillis = options.sessionTimeoutMs
             )
 
             val stream = BinaryInputArchiveFactory(
