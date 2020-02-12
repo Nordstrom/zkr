@@ -26,18 +26,20 @@ Commands:
 
 ### Backup Command
 ```
-Usage: zkr backup [-cflv] [--pretty] [-m=<maxRetries>] [-p=<path>] [-r=<repeatMin>] [-s=<sessionTimeoutMs>]
-                  [--s3-bucket=<s3bucket>] [--s3-region=<s3region>] [-z=<host>] [-e=<excludes>[,<excludes>...]]...
-                  [-i=<includes>[,<includes>...]]... <file> [COMMAND]
+Usage: zkr backup [-cdflv] [--pretty] [-m=<maxRetries>] [-p=<path>] [-r=<repeatMin>] [-s=<sessionTimeoutMs>]
+                  [--s3-bucket=<s3bucket>] [--s3-region=<s3region>] [--superdigest-password=<superDigestPassword>]
+                  [-z=<host>] [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,<includes>...]]... <file> [COMMAND]
 Backup ZooKeeper znodes
       <file>               Transaction log or backup file
   -c, --compress           Compress output (default: false)
+  -d, --dry-run            Do not actually perform the actions (default: false)
   -e, --exclude=<excludes>[,<excludes>...]
                            Comma-delimited list of paths to exclude (regex)
   -f, --ephemeral          Backup ephemeral znodes (default: false)
   -i, --include=<includes>[,<includes>...]
                            Comma-delimited list of paths to include (regex)
-  -l, --not-leader         Perform backup/restore even if not ZooKeeper ensemble leader (default: false)
+  -l, --not-leader         Perform backup/restore even if ZooKeeper is not ensemble leader or standalone (i.e.,
+                             follower) (default: false)
   -m, --max-retries=<maxRetries>
                            Maximum number of retries to read consistent data (default: 5)
   -p, --path=<path>        ZooKeeper root path for backup/restore (default: /)
@@ -50,20 +52,22 @@ Backup ZooKeeper znodes
                            S3 bucket containing Exhibitor transaction logs/backups or zkr backup files
       --s3-region=<s3region>
                            AWS Region (default: us-west-2)
+      --superdigest-password=<superDigestPassword>
+                           ZooKeeper superdigest password. ZKR_SUPERDIGEST_PASSWORD environment variable if found.
   -v, --verbose            Verbose (DEBUG) logging level (default: false)
   -z, --zookeeper=<host>   Target ZooKeeper host:port (default: localhost:2181)
 Commands:
   help  Displays help information about the specified command
 ```
 
-By default, backup will only execute if `--zookeeper` is the `leader` of an ensemble or 'standalone'.  To backup a `follower` specify `--not-leader`.
+By default, backup will only execute if `--zookeeper` is the `leader` of an ensemble or `standalone`.  To backup a `follower` specify `--not-leader`.
 
 
 ### Restore Command
 ```
 Usage: zkr restore [-cdlov] [--info] [-p=<path>] [-s=<sessionTimeoutMs>] [--s3-bucket=<s3bucket>]
-                   [--s3-region=<s3region>] [-z=<host>] [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,
-                   <includes>...]]... <file> [COMMAND]
+                   [--s3-region=<s3region>] [--superdigest-password=<superDigestPassword>] [-z=<host>] [-e=<excludes>[,
+                   <excludes>...]]... [-i=<includes>[,<includes>...]]... <file> [COMMAND]
 Restore ZooKeeper znodes from backup
       <file>                 Transaction log or backup file
   -c, --compress             Compressed input (default: false)
@@ -73,13 +77,16 @@ Restore ZooKeeper znodes from backup
   -i, --include=<includes>[,<includes>...]
                              Comma-delimited list of paths to include (regex)
       --info                 Print information about transaction log or backup then exit  (default: false)
-  -l, --not-leader           Perform backup/restore even if not ZooKeeper ensemble leader (default: false)
+  -l, --not-leader           Perform backup/restore even if ZooKeeper is not ensemble leader or standalone (i.e.,
+                               follower) (default: false)
   -o, --overwrite-existing   Overwrite existing znodes (default: false)
   -p, --path=<path>          ZooKeeper root path for backup/restore (default: /)
   -s, --session-timeout-ms=<sessionTimeoutMs>
                              ZooKeeper session timeout in milliseconds (default: 30000)
       --s3-bucket=<s3bucket> S3 bucket containing Exhibitor transaction logs/backups or zkr backup files
       --s3-region=<s3region> AWS Region (default: us-west-2)
+      --superdigest-password=<superDigestPassword>
+                             ZooKeeper superdigest password. ZKR_SUPERDIGEST_PASSWORD environment variable if found.
   -v, --verbose              Verbose (DEBUG) logging level (default: false)
   -z, --zookeeper=<host>     Target ZooKeeper host:port (default: localhost:2181)
 Commands:
@@ -93,7 +100,8 @@ Use `--dry-run` to see what would be restored without actually writing the znode
 ### Logs Command
 ```
 Usage: zkr logs [-lorv] [--info] [-p=<path>] [-s=<sessionTimeoutMs>] [--s3-bucket=<s3bucket>] [--s3-region=<s3region>]
-                [-z=<host>] [-e=<excludes>[,<excludes>...]]... [-i=<includes>[,<includes>...]]... <file> [COMMAND]
+                [--superdigest-password=<superDigestPassword>] [-z=<host>] [-e=<excludes>[,<excludes>...]]...
+                [-i=<includes>[,<includes>...]]... <file> [COMMAND]
 View/write ZooKeeper/Exhibitor transaction logs and backups
       <file>                 Transaction log or backup file
   -e, --exclude=<excludes>[,<excludes>...]
@@ -110,6 +118,8 @@ View/write ZooKeeper/Exhibitor transaction logs and backups
                              ZooKeeper session timeout in milliseconds (default: 30000)
       --s3-bucket=<s3bucket> S3 bucket containing Exhibitor transaction logs/backups or zkr backup files
       --s3-region=<s3region> AWS Region (default: us-west-2)
+      --superdigest-password=<superDigestPassword>
+                             ZooKeeper superdigest password. ZKR_SUPERDIGEST_PASSWORD environment variable if found.
   -v, --verbose              Verbose (DEBUG) logging level (default: false)
   -z, --zookeeper=<host>     Target ZooKeeper host:port (default: localhost:2181)
 Commands:
@@ -136,7 +146,9 @@ To see the available options, run:
 The only required options is `-z`/`--zookeeper` which is a standard ZooKeeper connection string (e.g., localhost:2181)
 
 
-### ZooKeeper Security via `jaas.conf`
+### ZooKeeper Security
+ 
+#### via `jaas.conf`
 
 Create a `jaas.conf` file with appropriate values. For example:
 
@@ -158,6 +170,12 @@ Invoke `zkr` thusly:
 `java -Djava.security.auth.login.config=./jaas.conf -cp build/libs/zkr-all.jar zkr.Zkr <command> <options>`
 
 Or use the `zkr` script in the root directory.
+
+#### `superdigest` support
+
+It may be necessary to add `superdigest` authorization to access restricted znodes (e.g., `/kafka/config/users`)
+
+This is supported by specifying the `superdigest` password in an environment variable `ZKR_SUPERDIGEST_PASSWORD` or using the `--superdigest-password` parameter.
 
 ## Backup/restore Kafka
 

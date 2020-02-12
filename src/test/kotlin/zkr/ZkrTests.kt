@@ -61,7 +61,7 @@ class ZkrTests : Spek({
             opts.host = "localhost:2181"
             opts.file = "nolog"
             opts.excludes = emptyList()
-            val restore = RestoreOptions()
+            val restore = LogsOptions()
             val logs = Logs()
             logs.options = opts
             logs.restore = restore

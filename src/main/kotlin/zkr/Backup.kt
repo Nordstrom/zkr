@@ -121,7 +121,12 @@ class Backup : Runnable {
             }
         }
 
-        val zkc = ZkClient(host = options.host, connect = true, sessionTimeoutMillis = options.sessionTimeoutMs)
+        val zkc = ZkClient(
+                host = options.host,
+                connect = true,
+                sessionTimeoutMillis = options.sessionTimeoutMs,
+                superDigestPassword = options.superDigestPassword
+        )
 
         numberNodes = 0
         val t0 = Instant.now()
@@ -180,7 +185,7 @@ class Backup : Runnable {
             check(stat.compareTo(dataStat) == 0) { "Unable to read consistent data for znode: $path" }
             if (options.shouldInclude(path)) {
                 logger.debug("backup node: $path")
-                if (!backupOptions.dryRun ) dumpNode(jgen, path, stat, acls, data)
+                if (!backupOptions.dryRun) dumpNode(jgen, path, stat, acls, data)
                 numberNodes++
             } else {
                 logger.debug("skip backup node: $path")

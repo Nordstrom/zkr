@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
 import java.time.Duration
 
+//TODO For long-running periodic backup, metrics will be useful.
+
 // Pyrokinetic Energy Meter (see Ghostbusters)
 class PkeMeter(val prefix: String) {
 
@@ -41,7 +43,7 @@ class PkeMeter(val prefix: String) {
     }
 
     fun errors(e: Exception) {
-        logger.trace("$e")
+        logger.error("$e")
         error.increment()
     }
 

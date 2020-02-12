@@ -42,7 +42,12 @@ class Logs : Runnable {
         try {
             logger.info("excluding  : ${options.excludes}")
             if (restore.overwrite) logger.warn("overwrite  : ${restore.overwrite} !!")
-            zk = ZkClient(host = options.host, connect = !(restore.info && restore.restore), sessionTimeoutMillis = options.sessionTimeoutMs)
+            zk = ZkClient(
+                    host = options.host,
+                    connect = !(restore.info && restore.restore),
+                    sessionTimeoutMillis = options.sessionTimeoutMs,
+                    superDigestPassword = options.superDigestPassword
+            )
 
             val stream = BinaryInputArchiveFactory(
                     txnLog = options.file,
