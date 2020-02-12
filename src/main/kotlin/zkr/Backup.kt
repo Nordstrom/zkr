@@ -124,7 +124,8 @@ class Backup : Runnable {
         val zkc = ZkClient(
                 host = options.host,
                 connect = true,
-                sessionTimeoutMillis = options.sessionTimeoutMs
+                sessionTimeoutMillis = options.sessionTimeoutMs,
+                superDigestPassword = options.superDigestPassword
         )
 
         numberNodes = 0

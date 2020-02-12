@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.NoSuchElementException
 
-class ZkClient(val host: String, val connect: Boolean = true, sessionTimeoutMillis: Long = 30000) {
+class ZkClient(val host: String, val connect: Boolean = true, superDigestPassword: String = "", sessionTimeoutMillis: Long = 30000) {
     var zk: ZooKeeper? = null
 
     init {
@@ -38,11 +38,9 @@ class ZkClient(val host: String, val connect: Boolean = true, sessionTimeoutMill
                     throw IOException("Timeout out connecting to: $host")
                 }
                 logger.debug("connected")
-                // Use superdigest if environment variable present
-                val password = System.getenv("SUPERDIGEST_PASSWORD") ?: ""
-                if (password.isNotBlank()) {
+                if (superDigestPassword.isNotBlank()) {
                     logger.debug("using superdigest")
-                    zk!!.addAuthInfo("digest", "super:$password".toByteArray())
+                    zk!!.addAuthInfo("digest", "super:$superDigestPassword".toByteArray())
                 }
             } catch (e: InterruptedException) {
                 try {
