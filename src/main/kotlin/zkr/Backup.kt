@@ -12,7 +12,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.selects.select
-import kotlinx.serialization.UnstableDefault
 import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.data.Stat
@@ -25,6 +24,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.*
 import kotlin.system.exitProcess
+import kotlin.system.measureTimeMillis
 
 @CommandLine.Command(
         name = "backup",
@@ -46,7 +46,8 @@ class Backup : Runnable {
     //TODO: Don't use class variable!!
     private var numberNodes = 0
 
-    @UnstableDefault
+    private var shouldAbort = false
+
     @ObsoleteCoroutinesApi
     @InternalCoroutinesApi
     override fun run() {
@@ -61,7 +62,10 @@ class Backup : Runnable {
             // Wait for cancel signal
             select<Unit> {
                 cancel.onReceive {
-                    jobs.forEach { it.cancelAndJoin() }
+                    shouldAbort = true
+                    jobs.forEach {
+                        it.cancelAndJoin()
+                    }
                 }
             }
         } //-runBlocking
@@ -70,13 +74,12 @@ class Backup : Runnable {
 
     }
 
-    @UnstableDefault
     @ObsoleteCoroutinesApi
     @InternalCoroutinesApi
     suspend fun runBackup() {
         val dur = Duration.ofMinutes(backupOptions.repeatMin)
 
-        logger.debug("backup     : ${options.file}")
+        logger.debug("backup-file: ${options.file}")
         logger.debug("compression: ${backupOptions.compress}")
         logger.debug("excluding  : ${options.excludes}")
         logger.debug("including  : ${options.includes}")
@@ -107,39 +110,44 @@ class Backup : Runnable {
         }
     }
 
-    @UnstableDefault
-    private fun doBackup() {
-        // Only execute backup if connector to ensemble leader
-        if (!options.notLeader) {
-            ZkSocketClient(options.host).use {
-                if (!it.isLeaderOrStandalone()) {
-                    logger.warn("ZooKeeper '${options.host}' is not the 'leader' or 'stand-alone', skipping backup.")
-                    return
-                } else {
-                    logger.debug("ZooKeeper '${options.host}' is leader or standalone")
-                }
-            }
-        }
-
-        val zkc = ZkClient(
-                host = options.host,
-                connect = true,
-                sessionTimeoutMillis = options.sessionTimeoutMs,
-                superDigestPassword = options.superDigestPassword
-        )
-
-        numberNodes = 0
-        val t0 = Instant.now()
-        val os = BackupArchiveOutputStream(path = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region, dryRun = backupOptions.dryRun)
-        logger.debug("backup to  : ${os.filename}")
-
-        backup(zkc, os)
-
-        logger.info("Summary ${summary(os.filename, numberNodes, t0)}")
+    private suspend fun abortIfCancelled() {
+        if (shouldAbort) cancel.send(Unit)
     }
 
-    @UnstableDefault
-    private fun backup(zkc: ZkClient, os: OutputStream) {
+    private suspend fun doBackup() {
+        lateinit var filename: String
+        val durationMillis = measureTimeMillis {
+            // Only execute backup if connector to ensemble leader
+            if (!options.notLeader) {
+                ZkSocketClient(options.host).use {
+                    if (!it.isLeaderOrStandalone()) {
+                        logger.warn("ZooKeeper '${options.host}' is not the 'leader' or 'stand-alone', skipping backup.")
+                        return
+                    } else {
+                        logger.debug("ZooKeeper  :'${options.host}' is leader or standalone")
+                    }
+                }
+            }
+
+            val zkc = ZkClient(
+                    host = options.host,
+                    connect = true,
+                    sessionTimeoutMillis = options.sessionTimeoutMs,
+                    superDigestPassword = options.superDigestPassword
+            )
+
+            numberNodes = 0
+            val os = BackupArchiveOutputStream(path = options.file, compress = backupOptions.compress, s3bucket = options.s3bucket, s3region = options.s3region, dryRun = backupOptions.dryRun)
+            filename = os.filename
+            logger.debug("backup to  : ${os.filename}")
+
+            backup(zkc, os)
+        }
+
+        logger.info("Summary ${summary(filename, numberNodes, durationMillis)}")
+    }
+
+    private suspend fun backup(zkc: ZkClient, os: OutputStream) {
         var jgen: JsonGenerator? = null
         try {
             jgen = JsonFactory().createGenerator(os)
@@ -160,8 +168,8 @@ class Backup : Runnable {
         }
     }
 
-    @UnstableDefault
-    private fun doBackup(zkc: ZkClient, jgen: JsonGenerator?, path: String) {
+    private suspend fun doBackup(zkc: ZkClient, jgen: JsonGenerator?, path: String) {
+        abortIfCancelled()
         try {
             val zk = zkc.zk
             val stat = Stat()
@@ -260,12 +268,12 @@ class Backup : Runnable {
         return original as MutableList<T>? ?: mutableListOf()
     }
 
-    private fun summary(file: String, numberNodes: Int, start: Instant): String = """
+    private fun summary(file: String, numberNodes: Int, durationMillis: Long): String = """
 
   ,-----------.  
 (_\  ZooKeeper \ file    : ${if (options.s3bucket.isNotEmpty()) "s3://${options.s3bucket}/" else ""}$file
    | Reaper    | znodes  : $numberNodes
-   | Summary   | duration: ${Duration.between(start, Instant.now())}
+   | Summary   | duration: ${Duration.ofMillis(durationMillis)}
   _|           | includes: ${options.includes}
  (_/_____(*)___/ excludes: ${options.excludes}
           \\

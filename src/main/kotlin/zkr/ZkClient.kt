@@ -56,7 +56,7 @@ class ZkClient(val host: String, val connect: Boolean = true, superDigestPasswor
     fun createZNode(path: String, data: ByteArray?, acls: List<ACL>, mode: CreateMode, overwrite: Boolean = false) {
         createPath(path)
         try {
-            val actual = zk?.create(path, data, acls, mode)
+            zk?.create(path, data, acls, mode)
         } catch (e: NodeExistsException) {
             if (overwrite) {
                 logger.debug("OVERWRITE: $path")
@@ -81,12 +81,12 @@ class ZkClient(val host: String, val connect: Boolean = true, superDigestPasswor
 
     fun setAcls(path: String, acls: List<ACL>) {
         createPath(path)
-        val stat = zk?.setACL(path, acls, -1)
+        zk?.setACL(path, acls, -1)
     }
 
     fun setData(path: String, data: ByteArray) {
         createPath(path)
-        val stat = zk?.setData(path, data, -1)
+        zk?.setData(path, data, -1)
     }
 
 
@@ -97,7 +97,7 @@ class ZkClient(val host: String, val connect: Boolean = true, superDigestPasswor
         if (zk?.exists(path, false) == null) {
             createPath(getParentPath(path))
             try {
-                val actual = zk?.create(path, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
+                zk?.create(path, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
             } catch (e: NodeExistsException) { // Race condition
                 logger.error("create-path-error: $e")
             }

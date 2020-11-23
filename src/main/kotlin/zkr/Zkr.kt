@@ -25,7 +25,7 @@ import kotlin.system.exitProcess
 class Zkr : Runnable {
 
     companion object {
-        const val VERSION = "0.3"
+        const val VERSION = "0.4"
         private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
         @JvmStatic

@@ -1,0 +1,25 @@
+name: Publish Docker image
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build and push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: '11.0.7'
+          architecture: x64
+      - name: Build with Gradle
+        run: ./gradlew shadowJar
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          repository: Nordstrom/zkr
+          tag_with_ref: true

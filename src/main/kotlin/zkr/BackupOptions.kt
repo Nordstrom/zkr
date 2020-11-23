@@ -39,14 +39,14 @@ class BackupOptions {
     var pretty: Boolean = false
 
     @CommandLine.Option(
-            names = ["--repeat.min", "-r"],
+            names = ["--repeat-every", "-r"],
             description = ["Perform periodic backup every <repeatMin> minutes"]
     )
     var repeatMin: Long = -1
 
     override fun toString(): String {
         return """
-compress=$compress, ephemeral=$ephemeral, repeat-min=$repeatMin, pretty=$pretty, dry-run=$dryRun 
+compress=$compress, ephemeral=$ephemeral, repeat-every=$repeatMin, pretty=$pretty, dry-run=$dryRun 
         """.trimIndent()
     }
 
