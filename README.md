@@ -131,9 +131,9 @@ By default, the `logs` command will only display the log transactions.  Use `--r
 
 ## Build
 
-This project was developed with gradle 6.0.1, java 11 and kotlin 1.3.61
+This project was developed with gradle 6.7.1, java 11 and kotlin 1.4.20
 
-`gradle clean assemble`
+`./gradlew clean assemble`
 
 This will create a shaded jar named `build/libs/zkr-all.jar`
 
