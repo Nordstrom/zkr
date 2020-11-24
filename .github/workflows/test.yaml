@@ -1,0 +1,21 @@
+name: Build and test
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: '11.0.7'
+          architecture: x64
+      - name: Build with Gradle
+        run: ./gradlew test

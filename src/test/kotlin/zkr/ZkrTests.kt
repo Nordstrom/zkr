@@ -57,8 +57,8 @@ class ZkrTests : Spek({
         }
 
         it("can process CREATE znode transaction") {
-            val app = Zkr()
-            opts.host = "localhost:2181"
+//            val app = Zkr()
+            opts.host = "localhost:$ZK_PORT"
             opts.file = "nolog"
             opts.excludes = emptyList()
             val restore = LogsOptions()

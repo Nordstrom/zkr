@@ -4,7 +4,7 @@ Utility to backup/restore ZooKeeper znodes or view and restore ZooKeeper transac
 
 ## Background
 
-This project provides a command-line utility that can be used to backup and restore ZooKeeper znodes in JSON, optionally compressed, and write to a file or S3.
+This project provides a command-line utility that can be used to backup and restore ZooKeeper znodes into JSON, optionally compressed, and write to a file or S3.
 
 The `logs` command can replay transactions from Exhibitor transaction log and backup archive (gzip'd) logs. The `logs` command ignores ephemeral znodes.
 
@@ -13,7 +13,7 @@ The `logs` command can replay transactions from Exhibitor transaction log and ba
 
 ### Commands
 ```
-ZooKeeper Reaper v0.3 - ZooKeeper backup/restore utility
+ZooKeeper Reaper v0.4 - ZooKeeper backup/restore utility
 Usage: zkr [-hV] [COMMAND]
   -h, --help      Show this help message and exit.
   -V, --version   Print version information and exit.
@@ -44,7 +44,7 @@ Backup ZooKeeper znodes
                            Maximum number of retries to read consistent data (default: 5)
   -p, --path=<path>        ZooKeeper root path for backup/restore (default: /)
       --pretty             Pretty print JSON output (default: false)
-  -r, --repeat.min=<repeatMin>
+  -r, --repeat-every=<repeatMin>
                            Perform periodic backup every <repeatMin> minutes
   -s, --session-timeout-ms=<sessionTimeoutMs>
                            ZooKeeper session timeout in milliseconds (default: 30000)
@@ -131,9 +131,9 @@ By default, the `logs` command will only display the log transactions.  Use `--r
 
 ## Build
 
-This project was developed with gradle 6.0.1, java 11 and kotlin 1.3.61
+This project was developed with gradle 6.7.1, java 11 and kotlin 1.4.20
 
-`gradle clean assemble`
+`./gradlew clean assemble`
 
 This will create a shaded jar named `build/libs/zkr-all.jar`
 
@@ -185,7 +185,7 @@ It is very important to NOT backup broker ephemeral nodes:
 - /kafka/controller
 - /kafka/brokers/ids/
 
-This is done by default as `--ephemeral` is `false` by default
+This is done by default as `--ephemeral`'s default value `false` 
 
 ### Restore
 Restoring can be done using Exhibitor/ZooKeeper transaction logs or backup files or a `zkr` backup file but must be done in a specific order:

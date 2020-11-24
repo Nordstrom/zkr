@@ -1,24 +1,17 @@
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    id 'org.jetbrains.kotlin.jvm' version '1.3.61'
+    id 'org.jetbrains.kotlin.jvm' version "$kotlinVersion"
 
     // Apply the application plugin to add support for building a CLI application.
     id 'application'
     id 'java'
 
     // Shadow plugin to build fat jar.
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
-    id 'org.jetbrains.kotlin.plugin.serialization' version '1.3.61'
+    id 'com.github.johnrengelman.shadow' version "$shadowVersion"
+    id 'org.jetbrains.kotlin.plugin.serialization' version "$kotlinVersion"
 
     // Test
-    id 'com.adarshr.test-logger' version '1.7.0'
-}
-
-ext {
-    kotlin_version = '1.3.61'
-    kotlin_serialization_runtime = '0.14.0'
-    coroutines = '1.3.2'
-    logback_version = '1.2.3'
+    id 'com.adarshr.test-logger' version "$testLoggerVersion"
 }
 
 repositories {
@@ -33,42 +26,42 @@ dependencies {
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
 
     // Use the Kotlin standard library.
-    compile "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlin_serialization_runtime"
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines"
-    implementation "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinSerializationVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:$kotlinSerializationVersion"
 
     // Configuration and metrics
-    implementation 'io.github.config4k:config4k:0.4.1'
-    implementation 'io.micrometer:micrometer-registry-jmx:1.1.6'
+    implementation "io.github.config4k:config4k:$config4kVersion"
+    implementation "io.micrometer:micrometer-registry-jmx:$micrometerVersion"
 
     // zkr
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.10.1'
-    implementation 'com.google.guava:guava:28.1-jre'
-    implementation 'info.picocli:picocli:4.1.2'
-    implementation 'org.apache.zookeeper:zookeeper:3.5.6'
+    implementation  "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
+    implementation  "com.google.guava:guava:$guavaVersion"
+    implementation  "info.picocli:picocli:$picocliVersion"
+    implementation  "org.apache.zookeeper:zookeeper:$zookeeperVersion"
 
     // aws V2!!
-    implementation platform('software.amazon.awssdk:bom:2.5.29')
+    implementation platform("software.amazon.awssdk:bom:$awsSdkV2Version")
     implementation 'software.amazon.awssdk:s3'
 
     // Logging (aws and/or org.apache.http use log4j)
-    implementation 'org.slf4j:slf4j-api:1.7.29'
-//    implementation 'org.slf4j:slf4j-log4j12:1.7.29'
-    implementation 'ch.qos.logback:logback-classic:1.2.3'
-    implementation 'ch.qos.logback:logback-core:1.2.3'
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+//    implementation "org.slf4j:slf4j-log4j12:$slf4jVersion"
+    implementation "ch.qos.logback:logback-classic:$logbackVersion"
+    implementation "ch.qos.logback:logback-core:$logbackVersion"
 
     // Use the Kotlin test library.
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
     // testImplementation for pure JVM unit tests
-    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutinesVersion"
 
     // Use the spek testing framework.
-    testImplementation 'org.spekframework.spek2:spek-dsl-jvm:2.0.7'
-    testRuntimeOnly 'com.adarshr:gradle-test-logger-plugin:1.7.0'
-    testRuntimeOnly 'org.jetbrains.kotlin:kotlin-reflect'
-    testRuntimeOnly 'org.spekframework.spek2:spek-runner-junit5:2.0.7'
-    testImplementation 'org.apache.curator:curator-test:4.2.0'
+    testImplementation "org.spekframework.spek2:spek-dsl-jvm:$spekVersion"
+    testRuntimeOnly "com.adarshr:gradle-test-logger-plugin:$testLoggerVersion"
+    testRuntimeOnly "org.jetbrains.kotlin:kotlin-reflect"
+    testRuntimeOnly "org.spekframework.spek2:spek-runner-junit5:$spekVersion"
+    testImplementation "org.apache.curator:curator-test:$curatorVersion"
 
     // Use the Kotlin JUnit integration.
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
@@ -77,8 +70,7 @@ dependencies {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
-        //TODO use jvmTarget = "11", but must use docker image openjdk11-slim for container.
-        jvmTarget = "1.8"
+        jvmTarget = "$jvmTargetVersion"
     }
 }
 

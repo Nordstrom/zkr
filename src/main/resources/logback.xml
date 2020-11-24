@@ -9,6 +9,8 @@
 
     <logger name="org.apache.zookeeper" level="WARN"/>
     <logger name="org.apache.http.client.protocol.RequestAddCookies" level="WARN"/>
+    <logger name="zkr.ZkClient" level="INFO"/>
+    <logger name="zkr.ZkSocketClient" level="INFO"/>
 
     <root level="INFO">
         <appender-ref ref="STDERR"/>

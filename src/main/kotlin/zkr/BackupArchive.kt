@@ -78,7 +78,7 @@ class BackupArchiveOutputStream(val path: String, val compress: Boolean = false,
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
-        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddhhmmz").withZone(ZoneId.of("Z"))
+        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmX").withZone(ZoneId.of("Z"))
     }
 } //BackupArchiveOutputStream
 

@@ -1,18 +1,17 @@
 package zkr
 
-import kotlinx.serialization.ContextualSerialization
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.data.Stat
 
-//TODO use kotlinx serialization. ACL and Stat may require custom serializers
 @Serializable
 data class BackupZNode(
         val path: String,
         val ephemeralOwner: Long,
         val data: ByteArray?,
-        val acls: List<@ContextualSerialization ACL>,
-        @ContextualSerialization
+        val acls: List<@Contextual ACL>,
+        @Contextual
         val stat: Stat? = null
 ) {
 
