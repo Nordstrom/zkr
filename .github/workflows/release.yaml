@@ -16,11 +16,10 @@ jobs:
           architecture: x64
       - name: Build with Gradle
         run: ./gradlew shadowJar
-      # For now, don't build/push image to registry
-      # - name: Push to GitHub Docker Registry
-      #   uses: mr-smithers-excellent/docker-build-push@v5
-      #   with:
-      #     image: Nordstrom/zkr
-      #     registry: ghcr.io
-      #     username: ${{ github.actor }}
-      #     password: ${{ github.token }}
+      - name: Push to GitHub Docker Registry
+        uses: mr-smithers-excellent/docker-build-push@v5
+        with:
+          image: Nordstrom/zkr
+          registry: ghcr.io
+          # username: ${{ github.actor }}
+          # password: ${{ github.token }}
