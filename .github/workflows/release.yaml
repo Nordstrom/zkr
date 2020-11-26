@@ -21,5 +21,6 @@ jobs:
         with:
           image: Nordstrom/zkr
           registry: ghcr.io
+          githubOrg: Nordstrom
           # username: ${{ github.actor }}
           # password: ${{ github.token }}
