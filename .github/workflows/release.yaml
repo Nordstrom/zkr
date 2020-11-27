@@ -8,34 +8,21 @@ jobs:
     name: Build and push job
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.4
-        name: Check out code
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
 
-      - uses: crazy-max/ghaction-docker-meta@v1
-        name: Docker meta
-        id: docker_meta
-        with:
-          images: Nordstrom/zkr
-
-      - uses: actions/setup-java@v1
-        name: Set up JDK
+      - name: Set up JDK
+        uses: actions/setup-java@v1
         with:
           java-version: "11.0.7"
           architecture: x64
       - name: Build with Gradle
         run: ./gradlew shadowJar
 
-      - uses: docker/login-action@v1
-        name: Login to Github Container Registry
+      - name: Push to GitHub Docker Registry
+        uses: mr-smithers-excellent/docker-build-push@v5
         with:
+          image: Nordstrom/zkr
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-
-      - uses: docker/build-push-action@v2
-        name: Build and push image
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.docker_meta.outputs.tags }}
