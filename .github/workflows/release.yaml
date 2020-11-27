@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2.3.4
+        with:
+          ref: bugfix/release_job
 
       - name: Set up JDK
         uses: actions/setup-java@v1
