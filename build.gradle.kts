@@ -31,6 +31,10 @@ dependencies {
     implementation("com.google.guava:guava:30.0-jre")
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions.freeCompilerArgs += arrayOf("-Xopt-in=kotlin.RequiresOptIn")
+}
+
 testing {
     suites {
         named("test", JvmTestSuite::class) {
