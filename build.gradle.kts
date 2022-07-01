@@ -32,7 +32,7 @@ dependencies {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.freeCompilerArgs += arrayOf("-Xopt-in=kotlin.RequiresOptIn")
+    kotlinOptions.freeCompilerArgs += arrayOf("-opt-in=kotlin.RequiresOptIn")
 }
 
 testing {
