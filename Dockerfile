@@ -1,5 +1,4 @@
 FROM openjdk:11-jre
-MAINTAINER proton@nordstrom.com
 
 RUN groupadd -g 1000 zkr \
  && useradd -r -m -u 1000 -g zkr zkr \
