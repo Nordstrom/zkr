@@ -10,8 +10,8 @@ The `logs` command can replay transactions from Exhibitor transaction log and ba
 
 ## Usage
 
-
 ### Commands
+
 ```
 ZooKeeper Reaper v0.4 - ZooKeeper backup/restore utility
 Usage: zkr [-hV] [COMMAND]
@@ -24,7 +24,8 @@ Commands:
   restore  Restore ZooKeeper znodes from backup
 ```
 
-### Backup Command
+### Backup command
+
 ```
 Usage: zkr backup [-cdflv] [--pretty] [-m=<maxRetries>] [-p=<path>] [-r=<repeatMin>] [-s=<sessionTimeoutMs>]
                   [--s3-bucket=<s3bucket>] [--s3-region=<s3region>] [--superdigest-password=<superDigestPassword>]
@@ -63,7 +64,8 @@ Commands:
 By default, backup will only execute if `--zookeeper` is the `leader` of an ensemble or `standalone`.  To backup a `follower` specify `--not-leader`.
 
 
-### Restore Command
+### Restore command
+
 ```
 Usage: zkr restore [-cdlov] [--info] [-p=<path>] [-s=<sessionTimeoutMs>] [--s3-bucket=<s3bucket>]
                    [--s3-region=<s3region>] [--superdigest-password=<superDigestPassword>] [-z=<host>] [-e=<excludes>[,
@@ -97,7 +99,8 @@ By default, restore will only execute if `--zookeeper` is the `leader` of an ens
 Use `--dry-run` to see what would be restored without actually writing the znodes.
 
 
-### Logs Command
+### Logs command
+
 ```
 Usage: zkr logs [-lorv] [--info] [-p=<path>] [-s=<sessionTimeoutMs>] [--s3-bucket=<s3bucket>] [--s3-region=<s3region>]
                 [--superdigest-password=<superDigestPassword>] [-z=<host>] [-e=<excludes>[,<excludes>...]]...
@@ -145,10 +148,49 @@ To see the available options, run:
 
 The only required options is `-z`/`--zookeeper` which is a standard ZooKeeper connection string (e.g., localhost:2181)
 
+## Backup/restore Kafka
 
-### ZooKeeper Security
- 
-#### via `jaas.conf`
+### Backup
+This tool can backup topics and acls in a Kafka cluster from either the Exhibitor transaction log/backup files.
+It is very important to NOT backup broker ephemeral nodes:
+- /kafka/controller
+- /kafka/brokers/ids/
+
+This is done by default as `--ephemeral`'s default value `false`
+
+### Restore
+Restoring can be done using Exhibitor/ZooKeeper transaction logs or backup files or a `zkr` backup file but must be done in a specific order:
+
+- start Exhibitor/ZooKeeper (ONLY) with backups `disabled` (so you don't accidentally overwrite your backup files)
+- Run `zkr` with `--overwrite-existing` option
+- start brokers, et al
+
+## Quick demo
+
+Run a quick demo to recover Kafka metadata stored in ZooKeeper
+
+### Create a Kafka cluster and topic
+
+- Run `docker-compose up`
+- Create a topic by running: `echo "hello" | kafkacat -b localhost:9092 -P -t hello`
+
+### Take a backup, then tear it all down
+
+- Take a backup: `./zkr.sh backup --zookeeper localhost:2181 -l backup-file`
+- Tear it all down: `docker-compose down`
+
+### Restart cluster using the backup
+
+- Run `docker-compose up --no-start`
+- Run `docker-compose start zookeeper`
+- Restore ZooKeeper by running: `./zkr.sh restore --zookeeper localhost:2181 -l backup.json`
+- Start Kafka cluster: `docker-compose start kafka-broker`
+
+Check the restore by listing Kafka topics: `kafkacat -b localhost:9092 -L`
+
+## ZooKeeper security
+
+### via `jaas.conf`
 
 Create a `jaas.conf` file with appropriate values. For example:
 
@@ -171,28 +213,11 @@ Invoke `zkr` thusly:
 
 Or use the `zkr` script in the root directory.
 
-#### `superdigest` support
+### `superdigest` support
 
 It may be necessary to add `superdigest` authorization to access restricted znodes (e.g., `/kafka/config/users`)
 
 This is supported by specifying the `superdigest` password in an environment variable `ZKR_SUPERDIGEST_PASSWORD` or using the `--superdigest-password` parameter.
-
-## Backup/restore Kafka
-
-### Backup
-This tool can backup topics and acls in a Kafka cluster from either the Exhibitor transaction log/backup files.
-It is very important to NOT backup broker ephemeral nodes:
-- /kafka/controller
-- /kafka/brokers/ids/
-
-This is done by default as `--ephemeral`'s default value `false` 
-
-### Restore
-Restoring can be done using Exhibitor/ZooKeeper transaction logs or backup files or a `zkr` backup file but must be done in a specific order:
-
-- start Exhibitor/ZooKeeper (ONLY) with backups `disabled` (so you don't accidentally overwrite your backup files)
-- Run `zkr` with `--overwrite-existing` option
-- start brokers, et al
 
 
 ## ATTRIBUTIONS

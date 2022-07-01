@@ -98,7 +98,7 @@ class Logs : Runnable {
                     processTxn(hdr, txn)
                 }
 
-                if (stream.readByte("EOR") != 'B'.toByte()) {
+                if (stream.readByte("EOR") != 'B'.code.toByte()) {
                     logger.info("Last transaction was partial.")
                     throw EOFException("Last transaction was partial.")
                 }

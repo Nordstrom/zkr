@@ -1,39 +1,31 @@
 package zkr
 
-import org.spekframework.spek2.Spek
-import org.spekframework.spek2.style.specification.describe
+import io.kotest.assertions.throwables.shouldThrow
+import org.junit.jupiter.api.Test
 import java.io.FileNotFoundException
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
-class BinaryInputArchiveFactoryTests : Spek({
+class BinaryInputArchiveFactoryTests {
+    @Test
+    fun `can read a local transaction log`() {
+        BinaryInputArchiveFactory(txnLog = "src/test/resources/log.1").create()
+    }
 
-    describe("binary-input-archive-factory tests") {
+    @Test
+    fun `can read local Exhibitor backup (gzip) transaction log`() {
+        BinaryInputArchiveFactory(txnLog = "src/test/resources/bak/log.1/1577209078000").create()
+    }
 
-        it("nop-test") {
-            assertEquals(42, 42)
+    @Test
+    fun `should throw exception for missing file`() {
+        shouldThrow<FileNotFoundException> {
+            BinaryInputArchiveFactory(txnLog = "where-is-waldo").create()
         }
+    }
 
-        it("can read local transaction log") {
-            BinaryInputArchiveFactory(txnLog = "src/test/resources/log.1").create()
+    @Test
+    fun `should throws exception for invalid file`() {
+        shouldThrow<InvalidMagicNumberException> {
+            BinaryInputArchiveFactory(txnLog = "src/test/resources/not-log.1").create()
         }
-
-        it("can read local Exhibitor backup (gzip) transaction log") {
-            BinaryInputArchiveFactory(txnLog = "src/test/resources/bak/log.1/1577209078000").create()
-        }
-
-        it("throws exception for non-existent file") {
-            assertFailsWith<FileNotFoundException> {
-                BinaryInputArchiveFactory(txnLog = "where-is-waldo").create()
-            }
-        }
-
-        it("throws exception for invalid file") {
-            assertFailsWith<InvalidMagicNumberException> {
-                BinaryInputArchiveFactory(txnLog = "src/test/resources/not-log.1").create()
-            }
-        }
-
-    } //-describe
-
-}) //-Spek
+    }
+}

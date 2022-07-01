@@ -5,59 +5,47 @@ import org.apache.zookeeper.ZooDefs
 import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.txn.CreateTxn
 import org.apache.zookeeper.txn.TxnHeader
-import org.spekframework.spek2.Spek
-import org.spekframework.spek2.style.specification.describe
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import java.util.Date
 import picocli.CommandLine
-import java.util.*
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
+class ZkrTests {
+    private val ZK_PORT = 12181
+    private lateinit var zk: TestingServer
+    private lateinit var opts: ZkrOptions
 
-// kotlin-test
-class ZkrTest {
-    @Test
-    fun nop() {
-        assertTrue(42 == 42)
+    @BeforeEach
+    fun setup() {
+        zk = TestingServer(ZK_PORT, true)
+        opts = ZkrOptions()
+        opts.host = "localhost:$ZK_PORT"
     }
-}
 
-// spek-framework
-class ZkrTests : Spek({
+    @AfterEach
+    fun teardown() {
+        zk.close()
+    }
 
-    val ZK_PORT = 12181
+    @Test
+    fun `should get missing arg log message`() {
+        val args = emptyArray<String>()
+        CommandLine(Zkr()).execute(*args)
+        //TODO how to capture and search stderr for expected content?
+    }
 
-    describe("zkr") {
-        lateinit var zk: TestingServer
-        lateinit var opts: ZkrOptions
-        beforeEachTest {
-            zk = TestingServer(ZK_PORT, true)
+    @Test
+    fun `should get FileNotFound log message`() {
+        // We can either specify --dry-run, or create TestingServer (see ZkClientTests) so
+        // the implicit connection to ZooKeeper does not affect the test.
+        val args = arrayOf("--dry-run", "not-a-file")
+        CommandLine(Zkr()).execute(*args)
+        //TODO how to capture and search stderr for expected content?
+    }
 
-            opts = ZkrOptions()
-            opts.host = "localhost:$ZK_PORT"
-        }
-        afterEachTest { zk.close() }
-
-        it("nop-test") {
-            assertEquals(42, 42)
-        }
-
-        it("should get missing arg log message") {
-            val args = emptyArray<String>()
-            CommandLine(Zkr()).execute(*args)
-            //TODO how to capture and search stderr for expected content?
-        }
-
-        it("should get FileNotFoundException log message") {
-            //NB: We can either specify --dry-run, or create TestingServer (see ZkClientTests) so
-            // the implicit connection to ZooKeeper does not affect the test.
-            val args = arrayOf<String>("--dry-run", "not-a-file")
-            CommandLine(Zkr()).execute(*args)
-            //TODO how to capture and search stderr for expected content?
-        }
-
-        it("can process CREATE znode transaction") {
-//            val app = Zkr()
+    @Test
+    fun `can process CREATE znode transaction`() {
             opts.host = "localhost:$ZK_PORT"
             opts.file = "nolog"
             opts.excludes = emptyList()
@@ -75,15 +63,11 @@ class ZkrTests : Spek({
             hdr.zxid = 333
             val txn = CreateTxn()
             txn.path = "/"
-            val acls = mutableListOf<ACL>(
-                    ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE)
+            txn.acl = mutableListOf(
+                ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE)
             )
-            txn.acl = acls
             logs.processTxn(hdr, txn)
 
             //TODO asserts
-        }
-
-    } //-describe
-
-}) //-Spek
+    }
+}

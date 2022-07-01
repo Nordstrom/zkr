@@ -1,149 +1,166 @@
 package zkr
 
-import org.spekframework.spek2.Spek
-import org.spekframework.spek2.style.specification.describe
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import java.util.regex.Pattern
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
-class ZkrOptionsTests : Spek({
+class ZkrOptionsTests {
+    private lateinit var options: ZkrOptions
 
-    describe("zkr exclude") {
-        val options = ZkrOptions()
-
-        it("can exclude a path") {
-            options.excludes = listOf(
-                    Pattern.compile("/kafka")
-            )
-            assertTrue(options.isPathExcluded("/kafka"))
-            assertFalse(options.isPathExcluded("/zookeeper"))
-        }
-
-        it("can exclude multiple paths") {
-            options.excludes = listOf(
-                    Pattern.compile("/kafka"),
-                    Pattern.compile("/zookeeper")
-            )
-            assertTrue(options.isPathExcluded("/kafka"))
-            assertTrue(options.isPathExcluded("/zookeeper"))
-            assertFalse(options.isPathExcluded("/notzookeeper"))
-        }
-
-        it("can exclude sub-paths") {
-            options.excludes = listOf(
-                    Pattern.compile("/kafka")
-            )
-            assertTrue(options.isPathExcluded("/kafka/config"))
-            assertTrue(options.isPathExcluded("/kafka/config/topics"))
-        }
-
-        it("does not exclude parent path") {
-            options.excludes = listOf(
-                    Pattern.compile("/kafka/kafka-acl/Topic")
-            )
-            assertFalse(options.isPathExcluded("/kafka"))
-            assertTrue(options.isPathExcluded("/kafka/kafka-acl/Topic"))
-            assertTrue(options.isPathExcluded("/kafka/kafka-acl/Topic/blue.meanies"))
-        }
-
-        it("can exclude regex paths") {
-            options.excludes = listOf(
-                    Pattern.compile("/kafka/.*changes")
-            )
-            assertFalse(options.isPathExcluded("/kafka/kafka-acl"))
-            assertTrue(options.isPathExcluded("/kafka/kafka-acl-changes"))
-        }
-    }//-describe-exclude
-
-    describe("zkr include") {
-        val options = ZkrOptions()
-
-        it("can include a path") {
-            options.includes = listOf(
-                    Pattern.compile("/kafka")
-            )
-            assertTrue(options.isPathIncluded("/kafka"))
-            assertFalse(options.isPathIncluded("/zookeeper"))
-        }
-
-        it("can include multiple paths") {
-            options.includes = listOf(
-                    Pattern.compile("/kafka"),
-                    Pattern.compile("/zookeeper")
-            )
-            assertTrue(options.isPathIncluded("/kafka"))
-            assertTrue(options.isPathIncluded("/zookeeper"))
-            assertFalse(options.isPathIncluded("/notzookeeper"))
-        }
-
-        it("can include sub-paths") {
-            options.includes = listOf(
-                    Pattern.compile("/kafka")
-            )
-            assertTrue(options.isPathIncluded("/kafka/config"))
-            assertTrue(options.isPathIncluded("/kafka/config/topics"))
-        }
-
-        it("does not include parent path") {
-            options.includes = listOf(
-                    Pattern.compile("/kafka/kafka-acl/Topic")
-            )
-            assertFalse(options.isPathIncluded("/kafka"))
-            assertTrue(options.isPathIncluded("/kafka/kafka-acl/Topic"))
-            assertTrue(options.isPathIncluded("/kafka/kafka-acl/Topic/blue.meanies"))
-        }
-
-        it("can include regex paths") {
-            options.includes = listOf(
-                    Pattern.compile("/kafka/.*changes")
-            )
-            assertFalse(options.isPathIncluded("/kafka/kafka-acl"))
-            assertTrue(options.isPathIncluded("/kafka/kafka-acl-changes"))
-        }
-    }//-describe-include
-
-    describe("zkr should include") {
-        val options = ZkrOptions()
-
-        it("should include path with mutually exclusive includes/excludes") {
-            options.includes = listOf(
-                    Pattern.compile("/kafka/kafka-acl/Topic")
-            )
-            options.excludes = listOf(
-                    Pattern.compile("/kafka/kafka-acl/Group")
-            )
-
-            assertFalse(options.shouldInclude("/kafka/kafka-acl"), "should not include '/kafka/kafka-acl'")
-            assertTrue(options.shouldInclude("/kafka/kafka-acl/Topic"), "should include '/kafka/kafka-acl/Topic'")
-            assertFalse(options.shouldInclude("/kafka/kafka-acl/Group"), "should not include '/kafka/kafka-acl/Group'")
-            assertFalse(options.shouldInclude("/kafka/kafka-acl/Group/blue.meanies"), "should not include '/kafka/kafka-acl/Group/blue.meanies'")
-        }
-
-        it("should not include path with same includes/excludes") {
-            options.includes = listOf(
-                    Pattern.compile("/kafka/kafka-acl"),
-                    Pattern.compile("/kafka/kafka-acl/Topic")
-            )
-            options.excludes = listOf(
-                    Pattern.compile("/kafka/kafka-acl/Topic")
-            )
-
-            assertFalse(options.shouldInclude("/kafka/kafka-acl/Topic"), "should not include '/kafka/kafka-acl/Topic'")
-            assertFalse(options.shouldInclude("/kafka/kafka-acl/Topic/blue.meanies"), "should not include '/kafka/kafka-acl/Topic/blue.meanies'")
-            assertTrue(options.shouldInclude("/kafka/kafka-acl/Group"), "should include '/kafka/kafka-acl/Group'")
-        }
-
-        it("should include only") {
-            options.includes = listOf(
-                    Pattern.compile("/kafka/kafka-acl/")
-            )
-            assertFalse(options.isPathIncluded("/"), "should not include '/'")
-            assertFalse(options.isPathIncluded("/kafka"), "should not include '/kafka'")
-            assertFalse(options.isPathIncluded("/kafka/kafka-acl-changes"), "should not include '/kafka/kafka-acl-changes'")
-            assertTrue(options.isPathIncluded("/kafka/kafka-acl/"), "should include '/kafka/kafka-acl/'")
-            assertTrue(options.isPathIncluded("/kafka/kafka-acl/Topic"), "should include '/kafka/kafka-acl/Topic")
-
-        }
+    @BeforeEach
+    fun init() {
+        options = ZkrOptions()
     }
 
-}) //-Spek
+    @Test
+    fun `can exclude a path`() {
+        options.excludes = listOf(
+            Pattern.compile("/kafka")
+        )
+
+       options.isPathExcluded("/kafka").shouldBeTrue()
+       options.isPathExcluded("/zookeeper").shouldBeFalse()
+    }
+
+    @Test
+    fun `can exclude many paths`() {
+        options.excludes = listOf(
+            Pattern.compile("/kafka"),
+            Pattern.compile("/zookeeper")
+        )
+        options.isPathExcluded("/kafka").shouldBeTrue()
+        options.isPathExcluded("/zookeeper").shouldBeTrue()
+        options.isPathExcluded("/notzookeeper").shouldBeFalse()
+    }
+
+    @Test
+    fun `can exclude sub-paths`() {
+        options.excludes = listOf(
+                Pattern.compile("/kafka")
+        )
+
+        options.isPathExcluded("/kafka/config").shouldBeTrue()
+        options.isPathExcluded("/kafka/config/topics").shouldBeTrue()
+    }
+
+    @Test
+    fun `should not exclude parent path`() {
+        options.excludes = listOf(
+            Pattern.compile("/kafka/kafka-acl/Topic")
+        )
+
+        options.isPathExcluded("/kafka").shouldBeFalse()
+        options.isPathExcluded("/kafka/kafka-acl/Topic").shouldBeTrue()
+        options.isPathExcluded("/kafka/kafka-acl/Topic/blue.meanies").shouldBeTrue()
+    }
+
+    @Test
+    fun `can exclude paths with regex`() {
+        options.excludes = listOf(
+            Pattern.compile("/kafka/.*changes")
+        )
+
+        options.isPathExcluded("/kafka/kafka-acl").shouldBeFalse()
+        options.isPathExcluded("/kafka/kafka-acl-changes").shouldBeTrue()
+    }
+
+    @Test
+    fun `can include a path`() {
+        options.includes = listOf(
+            Pattern.compile("/kafka")
+        )
+
+        options.isPathIncluded("/kafka").shouldBeTrue()
+        options.isPathIncluded("/zookeeper").shouldBeFalse()
+        options.isPathIncluded("/").shouldBeFalse()
+    }
+
+    @Test
+    fun `can include many paths`() {
+        options.includes = listOf(
+            Pattern.compile("/kafka"),
+            Pattern.compile("/zookeeper")
+        )
+
+        options.isPathIncluded("/kafka").shouldBeTrue()
+        options.isPathIncluded("/zookeeper").shouldBeTrue()
+        options.isPathIncluded("/notzookeeper").shouldBeFalse()
+    }
+
+    @Test
+    fun `can include sub-paths`() {
+        options.includes = listOf(
+            Pattern.compile("/kafka")
+        )
+
+        options.isPathIncluded("/kafka").shouldBeTrue()
+        options.isPathIncluded("/kafka/config").shouldBeTrue()
+        options.isPathIncluded("/kafka/config/topics").shouldBeTrue()
+    }
+
+    @Test
+    fun `should not include parent path`() {
+        options.includes = listOf(
+            Pattern.compile("/kafka/kafka-acl/Topic")
+        )
+
+        options.isPathIncluded("/kafka").shouldBeFalse()
+        options.isPathIncluded("/kafka/kafka-acl/Topic").shouldBeTrue()
+        options.isPathIncluded("/kafka/kafka-acl/Topic/blue.meanies").shouldBeTrue()
+    }
+
+    @Test
+    fun `can include paths with regex`() {
+        options.includes = listOf(
+            Pattern.compile("/kafka/.*changes")
+        )
+
+        options.isPathIncluded("/kafka/kafka-acl").shouldBeFalse()
+        options.isPathIncluded("/kafka/kafka-acl-changes").shouldBeTrue()
+    }
+
+    @Test
+    fun `can include paths with mutually exclusive includes and excludes`() {
+        options.includes = listOf(
+            Pattern.compile("/kafka/kafka-acl/Topic")
+        )
+        options.excludes = listOf(
+            Pattern.compile("/kafka/kafka-acl/Group")
+        )
+
+        options.shouldInclude("/kafka/kafka-acl").shouldBeFalse()
+        options.shouldInclude("/kafka/kafka-acl/Topic").shouldBeTrue()
+        options.shouldInclude("/kafka/kafka-acl/Group").shouldBeFalse()
+        options.shouldInclude("/kafka/kafka-acl/Group/blue.meanies").shouldBeFalse()
+    }
+
+    @Test
+    fun `should not include path with same includes and excludes`() {
+        options.includes = listOf(
+                Pattern.compile("/kafka/kafka-acl"),
+                Pattern.compile("/kafka/kafka-acl/Topic")
+        )
+        options.excludes = listOf(
+                Pattern.compile("/kafka/kafka-acl/Topic")
+        )
+
+        options.shouldInclude("/kafka/kafka-acl/Topic").shouldBeFalse()
+        options.shouldInclude("/kafka/kafka-acl/Topic/blue.meanies").shouldBeFalse()
+        options.shouldInclude("/kafka/kafka-acl/Group").shouldBeTrue()
+    }
+
+    @Test
+    fun `should include using explicit separator`() {
+        options.includes = listOf(
+            Pattern.compile("/kafka/kafka-acl/")
+        )
+
+        options.isPathIncluded("/").shouldBeFalse()
+        options.isPathIncluded("/kafka").shouldBeFalse()
+        options.isPathIncluded("/kafka/kafka-acl-changes").shouldBeFalse()
+        options.isPathIncluded("/kafka/kafka-acl/").shouldBeTrue()
+        options.isPathIncluded("/kafka/kafka-acl/Topic").shouldBeTrue()
+    }
+}

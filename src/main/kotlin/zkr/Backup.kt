@@ -1,3 +1,5 @@
+@file:OptIn(ObsoleteCoroutinesApi::class)
+
 package zkr
 
 //
@@ -48,8 +50,6 @@ class Backup : Runnable {
 
     private var shouldAbort = false
 
-    @ObsoleteCoroutinesApi
-    @InternalCoroutinesApi
     override fun run() {
         Zkr.logLevel(this.javaClass.`package`.name, if (options.verbose) Level.DEBUG else Level.INFO)
         logger.debug("options : $options")
@@ -74,8 +74,6 @@ class Backup : Runnable {
 
     }
 
-    @ObsoleteCoroutinesApi
-    @InternalCoroutinesApi
     suspend fun runBackup() {
         val dur = Duration.ofMinutes(backupOptions.repeatMin)
 
