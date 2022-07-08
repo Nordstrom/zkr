@@ -13,7 +13,7 @@ The `logs` command can replay transactions from Exhibitor transaction log and ba
 ### Commands
 
 ```
-ZooKeeper Reaper v0.4 - ZooKeeper backup/restore utility
+ZooKeeper Reaper v0.5 - ZooKeeper backup/restore utility
 Usage: zkr [-hV] [COMMAND]
   -h, --help      Show this help message and exit.
   -V, --version   Print version information and exit.
